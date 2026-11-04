@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kostal Piko",
+        "description": "Connect to the web interface of your Kostal Piko inverter.",
+        "data": {
+          "name": "Name",
+          "host": "Host (e.g. http://192.168.1.50)",
+          "username": "Username",
+          "password": "Password",
+          "monitored_conditions": "Sensors"
+        }
+      }
+    },
+    "error": {
+      "could_not_connect": "Could not connect to the inverter. Check the host, username and password.",
+      "host_exists": "This host is already configured."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured."
+    }
+  }
+}

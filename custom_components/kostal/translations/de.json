@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kostal Piko",
+        "description": "Verbinde dich mit der Weboberfläche deines Kostal-Piko-Wechselrichters.",
+        "data": {
+          "name": "Name",
+          "host": "Host (z. B. http://192.168.1.50)",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "monitored_conditions": "Sensoren"
+        }
+      }
+    },
+    "error": {
+      "could_not_connect": "Verbindung zum Wechselrichter fehlgeschlagen. Prüfe Host, Benutzername und Passwort.",
+      "host_exists": "Dieser Host ist bereits eingerichtet."
+    },
+    "abort": {
+      "already_configured": "Dieser Wechselrichter ist bereits eingerichtet."
+    }
+  }
+}
