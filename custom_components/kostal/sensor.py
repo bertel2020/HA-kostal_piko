@@ -1,172 +1,98 @@
 """Support for Kostal PIKO Photvoltaic (PV) inverter."""
 
-import logging, time
-from .piko_holder import PikoHolder
-
-from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
-
-from homeassistant.helpers.entity import Entity
-from homeassistant.util import Throttle, dt
-from homeassistant.const import (
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    CONF_HOST,
-    CONF_MONITORED_CONDITIONS,
-    UnitOfEnergy,
-)
+import logging
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import SENSOR_TYPES, MIN_TIME_BETWEEN_UPDATES, DOMAIN
+from . import KostalConfigEntry
+from .const import DOMAIN, SENSOR_TYPES
+from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+# sensor type -> (key in coordinator data, getter name of the kostalpiko object)
+VALUE_GETTERS = {
+    "current_power": ("data", "get_current_power"),
+    "total_energy": ("data", "get_total_energy"),
+    "daily_energy": ("data", "get_daily_energy"),
+    "string1_voltage": ("data", "get_string1_voltage"),
+    "string1_current": ("data", "get_string1_current"),
+    "string2_voltage": ("data", "get_string2_voltage"),
+    "string2_current": ("data", "get_string2_current"),
+    "string3_voltage": ("data", "get_string3_voltage"),
+    "string3_current": ("data", "get_string3_current"),
+    "l1_voltage": ("data", "get_l1_voltage"),
+    "l1_power": ("data", "get_l1_power"),
+    "l2_voltage": ("data", "get_l2_voltage"),
+    "l2_power": ("data", "get_l2_power"),
+    "l3_voltage": ("data", "get_l3_voltage"),
+    "l3_power": ("data", "get_l3_power"),
+    "status": ("data", "get_piko_status"),
+    "solar_generator_power": ("ba_data", "get_solar_generator_power"),
+    "consumption_phase_1": ("ba_data", "get_consumption_phase_1"),
+    "consumption_phase_2": ("ba_data", "get_consumption_phase_2"),
+    "consumption_phase_3": ("ba_data", "get_consumption_phase_3"),
+}
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the sensor dynamically."""
-    _LOGGER.info("Setting up kostal piko sensor")
-    async def async_add_sensors(sensors, piko: PikoHolder):
-        """Add a sensor."""
-        info = await hass.async_add_executor_job(piko._get_info)
-        _sensors = []
-        for sensor in sensors:
-            _sensors.append(PikoSensor(hass, piko, sensor, info, entry.title))
-        
-        async_add_entities(_sensors)
-        # async_add_entities([
-        #     PikoSensor(piko, type, entry.title)
-        # ])
 
-    entry.async_on_unload(
-        async_dispatcher_connect(
-            hass,
-            f"kostal_init_sensors_{entry.entry_id}",
-            async_add_sensors,
-        )
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: KostalConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the Kostal sensors."""
+    runtime = entry.runtime_data
+    async_add_entities(
+        PikoSensor(runtime.coordinator, runtime, sensor_type, entry.title)
+        for sensor_type in runtime.monitored_conditions
     )
 
 
-class PikoSensor(SensorEntity):
+class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
     """Representation of a Piko inverter value."""
 
-    def __init__(self,  hass: HomeAssistant, piko: PikoHolder, sensor_type, info={None,None}, name=None):
+    def __init__(self, coordinator: KostalCoordinator, runtime, sensor_type, title) -> None:
         """Initialize the sensor."""
+        super().__init__(coordinator)
         _LOGGER.debug("Initializing PikoSensor: %s", sensor_type)
-        self._sensor = SENSOR_TYPES[sensor_type][0]
-        self._name = name
-        self.hass = hass
+        name, unit, icon, state_class, device_class = SENSOR_TYPES[sensor_type]
         self.type = sensor_type
-        self.piko = piko
-        self._state = None
-        self._unit_of_measurement = SENSOR_TYPES[self.type][1]
-        self._icon = SENSOR_TYPES[self.type][2]
-        self.serial_number = info[0]
-        self.model = info[1]
-        if self._unit_of_measurement is not None:
-            self._state_class = {"state_class": SENSOR_TYPES[self.type][3],"device_class":SENSOR_TYPES[self.type][4]}
+        self._sensor = name
 
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return "{} {}".format(self._name, self._sensor)
-
-    @property
-    def state(self):
-        """Return the state of the device."""
-        return self._state
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement this sensor expresses itself in."""
-        return self._unit_of_measurement
+        # name and unique_id are deliberately unchanged compared to earlier
+        # versions, so existing entities (entity_id, history, statistics)
+        # are kept when the integration is replaced.
+        self._attr_name = "{} {}".format(title, name)
+        self._attr_unique_id = "{} {}".format(runtime.serial_number, name)
+        self._attr_icon = icon
+        self._attr_native_unit_of_measurement = unit
+        if unit is not None:
+            self._attr_state_class = SensorStateClass(state_class)
+            self._attr_device_class = SensorDeviceClass(device_class)
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, runtime.serial_number)},
+            name=title,
+            manufacturer="Kostal",
+            model=runtime.model,
+        )
 
     @property
-    def icon(self):
-        """Return icon."""
-        return self._icon
-
-    @property
-    def unique_id(self):
-        """Return unique id based on device serial and variable."""
-        return "{} {}".format(self.serial_number, self._sensor)
-
-    @property
-    def device_info(self):
-        """Return information about the device."""
-        return {
-            "identifiers": {(DOMAIN, self.serial_number)},
-            "name": self._name,
-            "manufacturer": "Kostal",
-            "model": self.model,
-        }
-
-###
-    @property
-    def state_attributes(self):
-        """Return device specific state attributes."""
-        if self._unit_of_measurement is not None:
-            return self._state_class
-###
-
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    async def async_update(self):
-        await self.hass.async_add_executor_job(self._update)
-
-    
-    def _update(self):
-        """Update data."""
-        self.piko.update()
-        data = self.piko.data
-        ba_data = self.piko.ba_data
-
-        if data is not None:
-            if self.type == "current_power":
-                self._state = data.get_current_power()
-            elif self.type == "total_energy":
-                self._state = data.get_total_energy()
-            elif self.type == "daily_energy":
-                self._state = data.get_daily_energy()
-            elif self.type == "string1_voltage":
-                self._state = data.get_string1_voltage()
-            elif self.type == "string1_current":
-                self._state = data.get_string1_current()
-            elif self.type == "string2_voltage":
-                self._state = data.get_string2_voltage()
-            elif self.type == "string2_current":
-                self._state = data.get_string2_current()
-            elif self.type == "string3_voltage":
-                self._state = data.get_string3_voltage()
-            elif self.type == "string3_current":
-                self._state = data.get_string3_current()
-            elif self.type == "l1_voltage":
-                self._state = data.get_l1_voltage()
-            elif self.type == "l1_power":
-                self._state = data.get_l1_power()
-            elif self.type == "l2_voltage":
-                self._state = data.get_l2_voltage()
-            elif self.type == "l2_power":
-                self._state = data.get_l2_power()
-            elif self.type == "l3_voltage":
-                self._state = data.get_l3_voltage()
-            elif self.type == "l3_power":
-                self._state = data.get_l3_power()
-            elif self.type == "status":
-                self._state = data.get_piko_status()
-        if ba_data is not None:
-            if self.type == "solar_generator_power":
-                self._state = ba_data.get_solar_generator_power()
-            elif self.type == "consumption_phase_1":
-                self._state = ba_data.get_consumption_phase_1()
-            elif self.type == "consumption_phase_2":
-                self._state = ba_data.get_consumption_phase_2()
-            elif self.type == "consumption_phase_3":
-                self._state = ba_data.get_consumption_phase_3()
-
-        _LOGGER.debug("END - Type: {} - {}".format(self.type, self._state))
+    def native_value(self):
+        """Return the value of the sensor."""
+        source, getter = VALUE_GETTERS[self.type]
+        obj = (self.coordinator.data or {}).get(source)
+        if obj is None:
+            return None
+        try:
+            return getattr(obj, getter)()
+        except (AttributeError, IndexError, TypeError, ValueError) as err:
+            _LOGGER.debug("Could not read %s: %s", self.type, err)
+            return None

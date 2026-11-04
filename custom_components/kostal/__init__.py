@@ -1,28 +1,43 @@
 """The Kostal PIKO inverter sensor integration."""
 
 import logging
+from dataclasses import dataclass
 
-from .piko_holder import PikoHolder
+from kostalpiko.kostalpiko import Piko
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.dispatcher import async_dispatcher_send, dispatcher_send
-
-from .const import DEFAULT_NAME, DOMAIN, SENSOR_TYPES
-from .configuration_schema import CONFIG_SCHEMA, CONFIG_SCHEMA_ROOT
-
 from homeassistant.const import (
-    CONF_USERNAME,
-    CONF_PASSWORD,
     CONF_HOST,
     CONF_MONITORED_CONDITIONS,
-    EVENT_HOMEASSISTANT_STOP
+    CONF_PASSWORD,
+    CONF_USERNAME,
 )
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
+
+from .configuration_schema import CONFIG_SCHEMA, CONFIG_SCHEMA_ROOT  # noqa: F401
+from .const import DOMAIN
+from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 VERSION = __version__
+
+PLATFORMS = ["sensor"]
+
+
+@dataclass
+class KostalRuntimeData:
+    """Runtime data of a config entry."""
+
+    coordinator: KostalCoordinator
+    serial_number: str
+    model: str
+    monitored_conditions: list[str]
+
+
+type KostalConfigEntry = ConfigEntry[KostalRuntimeData]
 
 
 async def async_setup(hass, config):
@@ -42,92 +57,50 @@ async def async_setup(hass, config):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Setup KostalPiko component"""
-
+async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bool:
+    """Set up KostalPiko from a config entry."""
     _LOGGER.info("Starting kostal, %s", __version__)
-
-    if not DOMAIN in hass.data:
-        hass.data[DOMAIN] = {}
 
     if entry.source == "import":
         if entry.options:  # config.yaml
             data = entry.options.copy()
+        elif "yaml_kostal" in hass.data:
+            data = hass.data["yaml_kostal"]
         else:
-            if "yaml_kostal" in hass.data:
-                data = hass.data["yaml_kostal"]
-            else:
-                data = {}
-                await hass.config_entries.async_remove(entry.entry_id)
+            await hass.config_entries.async_remove(entry.entry_id)
+            return False
     else:
         data = entry.data.copy()
         data.update(entry.options)
 
     conf = CONFIG_SCHEMA_ROOT(data)
 
-    hass.data[DOMAIN][entry.entry_id] = KostalInstance(hass, entry, conf)
+    piko = Piko(conf[CONF_HOST], conf[CONF_USERNAME], conf[CONF_PASSWORD])
+
+    # The serial number is part of the unique_id of every entity, so it has
+    # to be known before any sensor is created. If the inverter is not
+    # reachable (e.g. at night) Home Assistant retries automatically.
+    try:
+        info = await hass.async_add_executor_job(piko._get_info)
+    except Exception as err:  # noqa: BLE001
+        raise ConfigEntryNotReady(f"Cannot read inverter info: {err}") from err
+    if not info or len(info) < 2:
+        raise ConfigEntryNotReady("Kostal inverter not reachable")
+
+    coordinator = KostalCoordinator(hass, entry, piko)
+    await coordinator.async_config_entry_first_refresh()
+
+    entry.runtime_data = KostalRuntimeData(
+        coordinator=coordinator,
+        serial_number=info[0],
+        model=info[1],
+        monitored_conditions=conf[CONF_MONITORED_CONDITIONS],
+    )
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_unload_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bool:
     """Unload a config entry."""
-    instance = hass.data[DOMAIN].get(entry.entry_id)
-    if instance is None:
-        return True
-
-    unload_ok = True
-    if instance.platforms_loaded:
-        unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
-    if unload_ok:
-        await instance.stop()
-        await instance.clean()
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-    return unload_ok
-
-
-class KostalInstance():
-    """Config instance of Kostal"""
-
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, conf):
-        self.hass = hass
-        self.config_entry = entry
-        self.entry_id = self.config_entry.entry_id
-        self.conf = conf
-        self.piko = PikoHolder(
-            conf[CONF_HOST], conf[CONF_USERNAME], conf[CONF_PASSWORD]
-        )
-
-        self.platforms_loaded = False
-
-        entry.async_on_unload(
-            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self.stop)
-        )
-
-        self._startup_task = entry.async_create_background_task(
-            hass, self.start_up(), f"kostal start_up {self.entry_id}"
-        )
-
-    @property
-    def signal_init_sensors(self) -> str:
-        """Dispatcher signal, unique per config entry."""
-        return f"kostal_init_sensors_{self.entry_id}"
-
-    async def start_up(self):
-        try:
-            await self.hass.async_add_executor_job(self.piko.update)
-        except Exception:  # noqa: BLE001
-            _LOGGER.exception("Initial update of Kostal inverter failed")
-            return
-        await self._asyncadd_sensors(self.conf[CONF_MONITORED_CONDITIONS], self.piko)
-
-    async def stop(self, _=None):
-        """Stop Kostal."""
-        _LOGGER.info("Shutting down Kostal")
-
-    async def _asyncadd_sensors(self, sensors, piko: PikoHolder):
-        await self.hass.config_entries.async_forward_entry_setups(self.config_entry, ["sensor"])
-        self.platforms_loaded = True
-        async_dispatcher_send(self.hass, self.signal_init_sensors, sensors, piko)
-
-    async def clean(self):
-        pass
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
