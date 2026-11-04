@@ -38,6 +38,9 @@ SENSOR_TYPES = {
     "l3_power": ["L3 power", UnitOfPower.WATT, "mdi:power-plug", "measurement", "power"],
     "status": ["Status", None, "mdi:solar-power", None, None],
     # Calculated sensors
+    "string1_power": ["String 1 power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
+    "string2_power": ["String 2 power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
+    "string3_power": ["String 3 power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
     "dc_power": ["DC power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
     # AC output power / DC input power (sum of string V * I)
     "efficiency": ["Efficiency", PERCENTAGE, "mdi:percent", "measurement", None],

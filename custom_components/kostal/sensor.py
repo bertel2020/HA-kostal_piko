@@ -18,20 +18,23 @@ from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+def _string_power(data, string):
+    """Return the power of one string in W (voltage * current), or None."""
+    voltage = getattr(data, f"get_string{string}_voltage")()
+    current = getattr(data, f"get_string{string}_current")()
+    if voltage is None or current is None:
+        return None
+    return round(voltage * current)
+
+
 def _dc_power(data):
-    """Return the DC input power in W: sum of voltage * current of all strings.
+    """Return the DC input power in W: sum of the power of all strings.
 
     Returns None if the inverter reports no string values at all.
     """
-    total = 0.0
-    found = False
-    for string in (1, 2, 3):
-        voltage = getattr(data, f"get_string{string}_voltage")()
-        current = getattr(data, f"get_string{string}_current")()
-        if voltage is not None and current is not None:
-            total += voltage * current
-            found = True
-    return round(total) if found else None
+    powers = [_string_power(data, string) for string in (1, 2, 3)]
+    powers = [power for power in powers if power is not None]
+    return sum(powers) if powers else None
 
 
 def _efficiency(data):
@@ -68,6 +71,9 @@ VALUE_GETTERS = {
     "consumption_phase_1": ("ba_data", "get_consumption_phase_1"),
     "consumption_phase_2": ("ba_data", "get_consumption_phase_2"),
     "consumption_phase_3": ("ba_data", "get_consumption_phase_3"),
+    "string1_power": ("data", lambda data: _string_power(data, 1)),
+    "string2_power": ("data", lambda data: _string_power(data, 2)),
+    "string3_power": ("data", lambda data: _string_power(data, 3)),
     "dc_power": ("data", _dc_power),
     "efficiency": ("data", _efficiency),
 }
