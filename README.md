@@ -20,7 +20,7 @@
 
 Eine über die Oberfläche konfigurierbare Home-Assistant-Custom-Integration für **Kostal-Piko-Wechselrichter** mit Weboberfläche. Sie liest die Werte der Weboberfläche des Wechselrichters (`/index.fhtml`) über die Bibliothek [`kostalpiko`](https://pypi.org/project/kostalpiko/) aus und stellt sie als `sensor`-Entitäten bereit. Die Integration nutzt einen Config-Flow, einen gemeinsam genutzten `DataUpdateCoordinator` und typisierte Sensoren mit `device_class` und `state_class` – damit funktionieren Langzeitstatistiken und das Energie-Dashboard.
 
-Dieses Projekt ist ein Fork von [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Entity-IDs und `unique_id` der bestehenden Sensoren sind unverändert, sodass sich die Integration ohne Verlust von Verlauf und Statistiken austauschen lässt (siehe [Umstieg vom Upstream-Repository](#umstieg-vom-upstream-repository)).
+Dieses Projekt baut auf [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant) auf (siehe [Danksagung](#danksagung)). Entity-IDs und `unique_id` der bestehenden Sensoren sind unverändert, sodass sich die Integration ohne Verlust von Verlauf und Statistiken austauschen lässt (siehe [Umstieg vom Upstream-Repository](#umstieg-vom-upstream-repository)).
 
 ## Voraussetzungen
 
@@ -136,6 +136,12 @@ pytest
 
 Die Tests laufen mit `pytest-homeassistant-custom-component` gegen eine echte Home-Assistant-Instanz und einen simulierten Wechselrichter (kein Netzwerk).
 
+## Danksagung
+
+Ein herzliches **Dankeschön an [@rcasula](https://github.com/rcasula)**, den Autor der ursprünglichen Integration [kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Ohne seine Arbeit gäbe es dieses Projekt nicht – es basiert auf seinem Code und seiner Idee, Kostal-Piko-Wechselrichter in Home Assistant zu bringen.
+
+Ebenso danke an [@m-rossi](https://github.com/m-rossi) für seine Beiträge zum Upstream-Projekt (Tagesenergie für das Energie-Dashboard, Anpassungen an neue Home-Assistant-Versionen, `state_class`/`device_class` der Sensoren) sowie an alle weiteren, die dort Fehler gemeldet und Verbesserungen beigetragen haben.
+
 ## Haftungsausschluss
 
 Dies ist eine unabhängige, community-entwickelte Integration. Sie steht in keiner Verbindung zu Kostal und wird von dem Hersteller weder unterstützt noch empfohlen. Sie wird **„wie besehen“, ohne jegliche Gewährleistung** bereitgestellt; die Nutzung erfolgt auf eigenes Risiko. Die Integration liest nur Werte aus, schreibt aber nichts an den Wechselrichter.
@@ -146,4 +152,4 @@ Dies ist eine unabhängige, community-entwickelte Integration. Sie steht in kein
 
 ## Herkunft & Lizenz
 
-Fork von [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Das Upstream-Repository enthält keine Lizenzdatei; dieses Repository vergibt daher ebenfalls keine eigene Lizenz.
+Ursprünglich entstanden aus [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Das ursprüngliche Repository enthält keine Lizenzdatei; dieses Repository vergibt daher ebenfalls keine eigene Lizenz.

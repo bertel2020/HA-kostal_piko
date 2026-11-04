@@ -20,7 +20,7 @@
 
 A UI-configurable Home Assistant custom integration for **Kostal Piko inverters** with a web interface. It reads the values of the inverter's web interface (`/index.fhtml`) through the [`kostalpiko`](https://pypi.org/project/kostalpiko/) library and exposes them as `sensor` entities. The integration uses a config flow, a shared `DataUpdateCoordinator` and typed sensors with `device_class` and `state_class` – so long-term statistics and the Energy dashboard work.
 
-This project is a fork of [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Entity IDs and `unique_id` of the existing sensors are unchanged, so the integration can be swapped without losing history or statistics (see [Switching from the upstream repository](#switching-from-the-upstream-repository)).
+This project builds on [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant) (see [Acknowledgements](#acknowledgements)). Entity IDs and `unique_id` of the existing sensors are unchanged, so the integration can be swapped without losing history or statistics (see [Switching from the upstream repository](#switching-from-the-upstream-repository)).
 
 ## Requirements
 
@@ -136,6 +136,12 @@ pytest
 
 The tests run with `pytest-homeassistant-custom-component` against a real Home Assistant instance and a simulated inverter (no network).
 
+## Acknowledgements
+
+A heartfelt **thank you to [@rcasula](https://github.com/rcasula)**, the author of the original integration [kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Without their work this project would not exist – it is based on their code and their idea of bringing Kostal Piko inverters into Home Assistant.
+
+Thanks as well to [@m-rossi](https://github.com/m-rossi) for their contributions to the upstream project (daily energy for the Energy dashboard, adaptations to new Home Assistant versions, `state_class`/`device_class` of the sensors) and to everyone else who reported issues and contributed improvements there.
+
 ## Disclaimer
 
 This is an independent, community-developed integration. It is not affiliated with Kostal and is neither supported nor endorsed by the manufacturer. It is provided **"as is", without warranty of any kind**; use it at your own risk. The integration only reads values and never writes anything to the inverter.
@@ -146,4 +152,4 @@ This is an independent, community-developed integration. It is not affiliated wi
 
 ## Origin & licence
 
-Fork of [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). The upstream repository contains no licence file; this repository therefore does not grant a licence of its own either.
+Originally derived from [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). The original repository contains no licence file; this repository therefore does not grant a licence of its own either.
