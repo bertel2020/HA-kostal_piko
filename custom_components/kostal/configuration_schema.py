@@ -12,7 +12,7 @@ from homeassistant.const import (
 
 import homeassistant.helpers.config_validation as cv
 
-from .const import DEFAULT_NAME, DOMAIN, SENSOR_TYPES
+from .const import DEFAULT_NAME, SENSOR_TYPES
 
 CONFIG_SCHEMA_ROOT = vol.Schema({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
@@ -23,7 +23,3 @@ CONFIG_SCHEMA_ROOT = vol.Schema({
         cv.ensure_list, [vol.In(list(SENSOR_TYPES))]
     ),
 })
-
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: CONFIG_SCHEMA_ROOT
-}, extra=vol.ALLOW_EXTRA)

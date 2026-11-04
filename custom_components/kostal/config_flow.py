@@ -131,12 +131,6 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=setup_schema, errors=self._errors
         )
 
-    async def async_step_import(self, user_input=None):
-        """Import a config entry."""
-        if self._host_in_configuration_exists(user_input[CONF_HOST]):
-            return self.async_abort(reason="host_exists")
-        return await self.async_step_user(user_input)
-
 
 class CannotConnect(exceptions.HomeAssistantError):
     """Error to indicate we cannot connect."""
