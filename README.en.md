@@ -110,15 +110,6 @@ If you use the repository `rcasula/kostalpiko-homeassistant` in HACS:
 2. In HACS switch the repository to `bertel2020/HA-kostal_piko` (remove the old repository, add the new one as a custom repository and download **Kostal Piko**) and restart Home Assistant.
 3. Check that the existing `sensor.kostal_piko_*` keep delivering values. **No** entities with a `_2` suffix should appear: names, `unique_id` and device are unchanged.
 
-### Replacing your own template sensors
-
-If you have built `dc_power`, `string_N_power` or an efficiency with template sensors, you can replace them with the calculated sensors. The entity IDs are identical to common template names (`sensor.kostal_piko_dc_power`, `sensor.kostal_piko_string_1_power` …). For the integration to get these IDs:
-
-1. Remove the template sensors from your YAML (or delete the template helper) and reload the configuration. If an orphaned entry with the same ID remains in the entity registry, delete it too.
-2. In the integration under **Configure** enable the sensors you want (*String N power*, *DC power*, *Efficiency*).
-
-Otherwise Home Assistant assigns the ID with a `_2` suffix.
-
 ## YAML setup removed
 
 The former setup via a `kostal:` block in `configuration.yaml` is no longer supported. Existing entries created through the UI or the earlier import keep working.

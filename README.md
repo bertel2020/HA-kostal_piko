@@ -110,15 +110,6 @@ Bei Verwendung des Repositories `rcasula/kostalpiko-homeassistant` in HACS:
 2. In HACS das Repository auf `bertel2020/HA-kostal_piko` umstellen (altes Repository entfernen, neues als benutzerdefiniertes Repository hinzufügen und **Kostal Piko** herunterladen) und Home Assistant neu starten.
 3. Prüfen, dass die vorhandenen `sensor.kostal_piko_*` weiter Werte liefern. Es sollten **keine** Entitäten mit der Endung `_2` entstehen: Namen, `unique_id` und Gerät sind unverändert.
 
-### Eigene Template-Sensoren ablösen
-
-Wer `dc_power`, `string_N_power` oder einen Wirkungsgrad bisher über Template-Sensoren gebildet hat, kann diese durch die berechneten Sensoren ersetzen. Die Entity-IDs sind identisch zu üblichen Template-Namen (`sensor.kostal_piko_dc_power`, `sensor.kostal_piko_string_1_power` …). Damit die Integration diese IDs bekommt:
-
-1. Die Template-Sensoren aus der YAML entfernen (bzw. den Template-Helfer löschen) und die Konfiguration neu laden. Bleibt in der Entity-Registry ein verwaister Eintrag mit derselben ID, diesen ebenfalls löschen.
-2. In der Integration unter **Konfigurieren** die gewünschten Sensoren (*String N power*, *DC power*, *Efficiency*) aktivieren.
-
-Sonst vergibt Home Assistant die ID mit der Endung `_2`.
-
 ## YAML-Einrichtung entfällt
 
 Die frühere Einrichtung über einen `kostal:`-Block in der `configuration.yaml` wird nicht mehr unterstützt. Bestehende, per Oberfläche oder früherem Import angelegte Einträge laufen weiter.
