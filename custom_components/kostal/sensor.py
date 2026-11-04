@@ -18,7 +18,26 @@ from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-# sensor type -> (key in coordinator data, getter name of the kostalpiko object)
+def _efficiency(data):
+    """Return the inverter efficiency in percent.
+
+    AC output power divided by the DC input power. The DC power is the sum
+    of voltage * current of all strings that exist on this inverter.
+    Returns None while there is no DC input (night), instead of a bogus 0 %.
+    """
+    ac = data.get_current_power()
+    dc = 0.0
+    for string in (1, 2, 3):
+        voltage = getattr(data, f"get_string{string}_voltage")()
+        current = getattr(data, f"get_string{string}_current")()
+        if voltage is not None and current is not None:
+            dc += voltage * current
+    if ac is None or dc <= 0:
+        return None
+    return round(ac / dc * 100, 1)
+
+
+# sensor type -> (key in coordinator data, getter name or function)
 VALUE_GETTERS = {
     "current_power": ("data", "get_current_power"),
     "total_energy": ("data", "get_total_energy"),
@@ -40,6 +59,7 @@ VALUE_GETTERS = {
     "consumption_phase_1": ("ba_data", "get_consumption_phase_1"),
     "consumption_phase_2": ("ba_data", "get_consumption_phase_2"),
     "consumption_phase_3": ("ba_data", "get_consumption_phase_3"),
+    "efficiency": ("data", _efficiency),
 }
 
 
@@ -76,7 +96,8 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         self._attr_native_unit_of_measurement = unit
         if unit is not None:
             self._attr_state_class = SensorStateClass(state_class)
-            self._attr_device_class = SensorDeviceClass(device_class)
+            if device_class is not None:
+                self._attr_device_class = SensorDeviceClass(device_class)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, runtime.serial_number)},
             name=title,
@@ -92,7 +113,7 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         if obj is None:
             return None
         try:
-            value = getattr(obj, getter)()
+            value = getter(obj) if callable(getter) else getattr(obj, getter)()
         except (AttributeError, IndexError, TypeError, ValueError) as err:
             _LOGGER.debug("Could not read %s: %s", self.type, err)
             return None
