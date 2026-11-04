@@ -72,7 +72,8 @@ Einstellungen → Geräte & Dienste → Integration hinzufügen → **Kostal Pik
 1. **Name** (Standard `Kostal Piko`): wird zum Titel der Integration (`kostal_piko`) und zum Präfix aller Entity-IDs.
 2. **Host**: Adresse des Wechselrichters **mit** Protokoll, z. B. `http://192.168.1.50`.
 3. **Benutzername / Passwort**: Zugang zur Weboberfläche (Standard `pvserver` / `pvwr`).
-4. **Sensoren**: Auswahl der Werte, für die Entitäten angelegt werden.
+
+Danach folgt die Auswahl der **Sensoren**. Vorausgewählt ist alles, was dein Wechselrichter liefert (zum Beispiel nur die vorhandenen Strings und Phasen). Die Sensoren für den Eigenverbrauch (BA) sind nur vorausgewählt, wenn der Wechselrichter dafür Werte meldet. Nicht gewünschte Sensoren kannst du abwählen.
 
 Beim Speichern wird die Verbindung geprüft (inklusive Zugangsdaten). Ist der Wechselrichter nicht erreichbar oder sind die Zugangsdaten falsch, erscheint ein Fehler. Derselbe Wechselrichter kann nicht doppelt angelegt werden; als Kennung dient seine Seriennummer.
 

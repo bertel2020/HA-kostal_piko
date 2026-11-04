@@ -14,6 +14,18 @@ USER_INPUT = {
 }
 
 
+CONNECTION = {k: v for k, v in USER_INPUT.items() if k != "monitored_conditions"}
+
+# what the fake inverter provides (one phase, three strings, no BA hardware)
+DETECTED = [
+    "current_power", "total_energy", "daily_energy",
+    "string1_voltage", "string1_current", "string2_voltage", "string2_current",
+    "string3_voltage", "string3_current", "l1_voltage", "l1_power", "status",
+    "string1_power", "string2_power", "string3_power", "dc_power", "efficiency",
+    "average_power_15min",
+]  # fmt: skip
+
+
 async def _start(hass):
     return await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -25,19 +37,78 @@ async def test_user_flow_creates_entry(hass, fake_piko):
     assert result["type"] is FlowResultType.FORM
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], USER_INPUT
+        result["flow_id"], CONNECTION
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "sensors"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"monitored_conditions": ["current_power", "efficiency"]}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "kostal_piko"
     assert result["data"]["host"] == "http://192.168.1.50"
+    assert result["data"]["monitored_conditions"] == ["current_power", "efficiency"]
     assert result["result"].unique_id == "SN123"
+
+
+async def test_sensors_are_preselected_from_the_inverter(hass, fake_piko):
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CONNECTION
+    )
+    # the defaults of the form are the preselection
+    assert result["data_schema"]({})["monitored_conditions"] == DETECTED
+
+
+async def test_ba_sensors_are_preselected_with_ba_values(hass, fake_piko):
+    fake_piko.ba_values = {
+        "solar_generator_power": 120,
+        "consumption_phase_1": 50,
+        "consumption_phase_2": 0,
+        "consumption_phase_3": 10,
+    }
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CONNECTION
+    )
+    selected = result["data_schema"]({})["monitored_conditions"]
+    assert set(selected) == set(DETECTED) | {
+        "solar_generator_power",
+        "consumption_phase_1",
+        "consumption_phase_2",
+        "consumption_phase_3",
+    }
+
+
+async def test_failing_ba_page_does_not_break_setup(hass, fake_piko):
+    fake_piko.ba_fail = True
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CONNECTION
+    )
+    assert result["step_id"] == "sensors"
+    assert result["data_schema"]({})["monitored_conditions"] == DETECTED
+
+
+async def test_sensors_follow_the_page_layout(hass, fake_piko):
+    # two strings, no third string and no calculated string 3 power
+    fake_piko.data_values = {"string3_voltage": None, "string3_current": None}
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CONNECTION
+    )
+    selected = result["data_schema"]({})["monitored_conditions"]
+    assert "string2_power" in selected
+    assert "string3_voltage" not in selected
+    assert "string3_power" not in selected
 
 
 async def test_unreachable_inverter_shows_error(hass, fake_piko):
     fake_piko.info = None  # the inverter does not answer
     result = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], USER_INPUT
+        result["flow_id"], CONNECTION
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "could_not_connect"}
@@ -50,7 +121,7 @@ async def test_same_inverter_cannot_be_added_twice(hass, fake_piko):
 
     result = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], USER_INPUT
+        result["flow_id"], CONNECTION
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
@@ -61,7 +132,7 @@ async def test_same_host_shows_error(hass, fake_piko):
 
     result = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], USER_INPUT
+        result["flow_id"], CONNECTION
     )
     assert result["errors"] == {"host": "host_exists"}
 
@@ -155,7 +226,7 @@ async def test_reconfigure_unreachable_shows_error(hass, fake_piko):
 async def test_wrong_password_shows_invalid_auth(hass, fake_piko):
     result = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**USER_INPUT, "password": "wrong"}
+        result["flow_id"], {**CONNECTION, "password": "wrong"}
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "invalid_auth"}
@@ -225,7 +296,7 @@ async def test_unknown_page_layout_shows_unsupported_device(hass, fake_piko):
     fake_piko.parse_fail = True
     result = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], USER_INPUT
+        result["flow_id"], CONNECTION
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "unsupported_device"}

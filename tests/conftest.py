@@ -42,10 +42,13 @@ class FakeData:
 
 
 class FakeBAData:
-    """Stand-in for client.PikoBAData without BA hardware."""
+    """Stand-in for client.PikoBAData (without BA hardware: no values)."""
+
+    def __init__(self, values=None):
+        self.values = values or {}
 
     def get(self, name):
-        return None
+        return self.values.get(name)
 
 
 class FakeClient:
@@ -57,6 +60,7 @@ class FakeClient:
     auth_fail = False  # simulate wrong credentials
     ba_fail = False  # simulate a failing BA request only
     parse_fail = False  # simulate pages with an unknown structure
+    ba_values: dict = {}  # values of the BA page (empty: no BA hardware)
     info_by_host: dict = {}  # several inverters: host -> PikoInfo
     values_by_host: dict = {}  # several inverters: host -> values
 
@@ -87,7 +91,7 @@ class FakeClient:
     async def async_get_ba_data(self):
         if FakeClient.ba_fail:
             raise KostalConnectionError("BA failed")
-        return FakeBAData()
+        return FakeBAData(FakeClient.ba_values)
 
 
 @pytest.fixture
@@ -99,6 +103,7 @@ def fake_piko():
     FakeClient.auth_fail = False
     FakeClient.ba_fail = False
     FakeClient.parse_fail = False
+    FakeClient.ba_values = {}
     FakeClient.info_by_host = {}
     FakeClient.values_by_host = {}
     with (

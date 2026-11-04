@@ -1,6 +1,7 @@
 """Adds config flow for Kostal."""
 
 import logging
+from dataclasses import dataclass
 
 import voluptuous as vol
 
@@ -14,15 +15,21 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
 )
 from homeassistant.util import slugify
 
+from .calculations import available_sensors
 from .client import (
     KostalAuthError,
     KostalClient,
@@ -42,12 +49,26 @@ from .const import (
 
 SUPPORTED_SENSOR_TYPES = list(SENSOR_TYPES)
 
-DEFAULT_MONITORED_CONDITIONS = [
-    "current_power",
-    "total_energy",
-    "daily_energy",
-    "status",
-]
+
+@dataclass
+class Detected:
+    """What the inverter reported during the connection check."""
+
+    info: PikoInfo
+    sensors: list[str]
+
+
+def sensor_selector() -> SelectSelector:
+    """Selection of the sensors, with translated labels."""
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=SUPPORTED_SENSOR_TYPES,
+            multiple=True,
+            mode=SelectSelectorMode.LIST,
+            translation_key="sensors",
+        )
+    )
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,15 +86,20 @@ def kostal_entries(hass: HomeAssistant):
 
 async def async_check_connection(
     hass: HomeAssistant, host: str, username: str, password: str
-) -> tuple[PikoInfo | None, str | None]:
-    """Try to read the inverter. Returns (info, None) or (None, error key)."""
+) -> tuple[Detected | None, str | None]:
+    """Try to read the inverter. Returns (detected, None) or (None, error key)."""
     client = KostalClient(async_get_clientsession(hass), host, username, password)
     try:
         info = await client.async_get_info()
         # also read the main page: it shows whether the page layout of this
         # inverter is known
-        await client.async_get_data()
-        return info, None
+        data = await client.async_get_data()
+        try:
+            ba_data = await client.async_get_ba_data()
+        except KostalError:
+            ba_data = None  # optional, not every inverter has the BA page
+        found = available_sensors(data, ba_data)
+        return Detected(info, [name for name in SUPPORTED_SENSOR_TYPES if name in found]), None
     except KostalAuthError:
         return None, "invalid_auth"
     except KostalParseError as err:
@@ -101,67 +127,61 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         """Initialize."""
         self._errors = {}
+        self._name = DEFAULT_NAME
+        self._connection: dict = {}
+        self._sensors: list[str] = []
 
     def _host_in_configuration_exists(self, host) -> bool:
         """Return True if the host is already configured."""
         return host in kostal_entries(self.hass)
 
     async def async_step_user(self, user_input=None):
-        """Handle the initial step."""
+        """Ask for the connection data."""
         self._errors = {}
 
         if user_input is not None:
-            name = slugify(user_input.get(CONF_NAME, DEFAULT_NAME))
             if self._host_in_configuration_exists(user_input[CONF_HOST]):
                 self._errors[CONF_HOST] = "host_exists"
             else:
-                host = user_input[CONF_HOST]
-                username = user_input[CONF_USERNAME]
-                password = user_input[CONF_PASSWORD]
-                conditions = user_input[CONF_MONITORED_CONDITIONS]
-                info, error = await async_check_connection(
-                    self.hass, host, username, password
+                detected, error = await async_check_connection(
+                    self.hass,
+                    user_input[CONF_HOST],
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
                 )
                 if error is not None:
                     self._errors["base"] = error
                 else:
                     # The serial number identifies the inverter, regardless of
                     # how the host URL is spelled.
-                    await self.async_set_unique_id(info.serial_number)
+                    await self.async_set_unique_id(detected.info.serial_number)
                     self._abort_if_unique_id_configured()
-                    return self.async_create_entry(
-                        title=name,
-                        data={
-                            CONF_HOST: host,
-                            CONF_USERNAME: username,
-                            CONF_PASSWORD: password,
-                            CONF_MONITORED_CONDITIONS: conditions,
-                        },
-                    )
+                    self._name = slugify(user_input.get(CONF_NAME, DEFAULT_NAME))
+                    self._connection = {
+                        CONF_HOST: user_input[CONF_HOST],
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    }
+                    self._sensors = detected.sensors
+                    return await self.async_step_sensors()
         else:
-            user_input = {}
-            user_input[CONF_NAME] = DEFAULT_NAME
-            user_input[CONF_HOST] = "http://"
-            user_input[CONF_USERNAME] = ""
-            user_input[CONF_PASSWORD] = ""
-            user_input[CONF_MONITORED_CONDITIONS] = DEFAULT_MONITORED_CONDITIONS
+            user_input = {CONF_NAME: DEFAULT_NAME, CONF_HOST: "http://"}
 
-        default_monitored_conditions = (
-            [] if self._async_current_entries() else DEFAULT_MONITORED_CONDITIONS
-        )
         setup_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_NAME, default=user_input.get(CONF_NAME, DEFAULT_NAME)
                 ): str,
-                vol.Required(CONF_HOST, default=user_input[CONF_HOST]): str,
                 vol.Required(
-                    CONF_USERNAME, description={"suggested_value": "pvserver"}
+                    CONF_HOST, default=user_input.get(CONF_HOST, "http://")
                 ): str,
-                vol.Required(CONF_PASSWORD, default=user_input[CONF_PASSWORD]): str,
                 vol.Required(
-                    CONF_MONITORED_CONDITIONS, default=default_monitored_conditions
-                ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
+                    CONF_USERNAME,
+                    default=user_input.get(CONF_USERNAME, "pvserver"),
+                ): str,
+                vol.Required(
+                    CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
+                ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
             }
         )
 
@@ -172,13 +192,33 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={"issues_url": ISSUES_URL},
         )
 
+    async def async_step_sensors(self, user_input=None):
+        """Choose the sensors; all that this inverter provides are preselected."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title=self._name,
+                data={
+                    **self._connection,
+                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                },
+            )
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_MONITORED_CONDITIONS, default=self._sensors
+                ): sensor_selector()
+            }
+        )
+        return self.async_show_form(step_id="sensors", data_schema=schema)
+
     async def async_step_reconfigure(self, user_input=None):
         """Change host and credentials of an existing entry."""
         entry = self._get_reconfigure_entry()
         errors = {}
 
         if user_input is not None:
-            info, error = await async_check_connection(
+            detected, error = await async_check_connection(
                 self.hass,
                 user_input[CONF_HOST],
                 user_input[CONF_USERNAME],
@@ -186,7 +226,7 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if error is not None:
                 errors["base"] = error
-            elif entry.unique_id and info.serial_number != entry.unique_id:
+            elif entry.unique_id and detected.info.serial_number != entry.unique_id:
                 return self.async_abort(reason="wrong_device")
             else:
                 return self.async_update_reload_and_abort(
@@ -218,7 +258,7 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            info, error = await async_check_connection(
+            detected, error = await async_check_connection(
                 self.hass,
                 entry.data[CONF_HOST],
                 user_input[CONF_USERNAME],
@@ -226,7 +266,7 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if error is not None:
                 errors["base"] = error
-            elif entry.unique_id and info.serial_number != entry.unique_id:
+            elif entry.unique_id and detected.info.serial_number != entry.unique_id:
                 return self.async_abort(reason="wrong_device")
             else:
                 return self.async_update_reload_and_abort(
@@ -272,7 +312,7 @@ class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS, default=list(current)
-                ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
+                ): sensor_selector(),
                 vol.Required(
                     CONF_SCAN_INTERVAL, default=interval
                 ): NumberSelector(

@@ -3,13 +3,28 @@
     "step": {
       "user": {
         "title": "Kostal Piko",
-        "description": "Verbinde dich mit der Weboberfläche deines Kostal-Piko-Wechselrichters.",
+        "description": "Verbinde dich mit der Weboberfläche deines Kostal-Piko-Wechselrichters. Im nächsten Schritt wählst du die Sensoren.",
         "data": {
           "name": "Name",
-          "host": "Host (z. B. http://192.168.1.50)",
+          "host": "Host",
           "username": "Benutzername",
-          "password": "Passwort",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "name": "Wird für das Gerät und die Entity-IDs verwendet, z. B. kostal_piko.",
+          "host": "Adresse des Wechselrichters, z. B. http://192.168.1.50",
+          "username": "Login der Weboberfläche des Wechselrichters (meist pvserver).",
+          "password": "Passwort der Weboberfläche."
+        }
+      },
+      "sensors": {
+        "title": "Sensoren",
+        "description": "Wähle die Sensoren, die angelegt werden. Vorausgewählt ist alles, was dieser Wechselrichter liefert. Die Sensoren für den Eigenverbrauch (BA) nur, wenn der Wechselrichter dafür Werte meldet. Die Auswahl lässt sich später über Konfigurieren ändern.",
+        "data": {
           "monitored_conditions": "Sensoren"
+        },
+        "data_description": {
+          "monitored_conditions": "Nicht gewählte Sensoren werden nicht angelegt. Bereits vorhandene Entitäten sind nicht betroffen."
         }
       },
       "reconfigure": {
@@ -47,7 +62,7 @@
     "step": {
       "init": {
         "title": "Kostal Piko",
-        "description": "Wie oft der Wechselrichter ausgelesen wird. Der Wechselrichter braucht etwa 1 s pro Seite, Werte unter 10 s sind nicht sinnvoll. Wähle, welche Sensoren angelegt werden und wie oft sie aktualisiert werden.",
+        "description": "Wähle die Sensoren, die angelegt werden, und wie oft der Wechselrichter ausgelesen wird. Der Wechselrichter braucht etwa 1 s pro Seite, Werte unter 10 s sind nicht sinnvoll.",
         "data": {
           "monitored_conditions": "Sensoren",
           "scan_interval": "Abfrageintervall (Sekunden)"
@@ -134,6 +149,38 @@
       },
       "average_power_15min": {
         "name": "Leistung Schnitt 15 Minuten"
+      }
+    }
+  },
+  "selector": {
+    "sensors": {
+      "options": {
+        "solar_generator_power": "Solargenerator-Leistung",
+        "consumption_phase_1": "Verbrauch Phase 1",
+        "consumption_phase_2": "Verbrauch Phase 2",
+        "consumption_phase_3": "Verbrauch Phase 3",
+        "current_power": "Aktuelle Leistung",
+        "total_energy": "Gesamtenergie",
+        "daily_energy": "Tagesenergie",
+        "string1_voltage": "String 1 Spannung",
+        "string1_current": "String 1 Strom",
+        "string2_voltage": "String 2 Spannung",
+        "string2_current": "String 2 Strom",
+        "string3_voltage": "String 3 Spannung",
+        "string3_current": "String 3 Strom",
+        "l1_voltage": "L1 Spannung",
+        "l1_power": "L1 Leistung",
+        "l2_voltage": "L2 Spannung",
+        "l2_power": "L2 Leistung",
+        "l3_voltage": "L3 Spannung",
+        "l3_power": "L3 Leistung",
+        "status": "Status",
+        "string1_power": "String 1 Leistung",
+        "string2_power": "String 2 Leistung",
+        "string3_power": "String 3 Leistung",
+        "dc_power": "DC-Leistung",
+        "efficiency": "Wirkungsgrad",
+        "average_power_15min": "Leistung Schnitt 15 Minuten"
       }
     }
   }
