@@ -92,7 +92,12 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         if obj is None:
             return None
         try:
-            return getattr(obj, getter)()
+            value = getattr(obj, getter)()
         except (AttributeError, IndexError, TypeError, ValueError) as err:
             _LOGGER.debug("Could not read %s: %s", self.type, err)
             return None
+        # kostalpiko returns the text "No BA sensor installed" for the BA
+        # values if the hardware is missing. Numeric sensors must not get text.
+        if self._attr_native_unit_of_measurement is not None and isinstance(value, str):
+            return None
+        return value
