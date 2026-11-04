@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bertel2020/HA-kostal_piko/main/brands/logo.png" alt="Kostal Piko" width="160">
+</p>
+
 <h1 align="center">Kostal Piko</h1>
 
 <p align="center">
@@ -9,6 +13,9 @@
   <a href="https://www.home-assistant.io/"><img src="https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2.svg?logo=home-assistant&logoColor=white" alt="Home Assistant"></a>
   <a href="https://github.com/bertel2020/HA-kostal_piko/releases"><img src="https://img.shields.io/github/v/release/bertel2020/HA-kostal_piko?sort=semver&include_prereleases" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/bertel2020/HA-kostal_piko" alt="Lizenz"></a>
+  <a href="https://github.com/bertel2020/HA-kostal_piko/actions/workflows/hassfest.yaml"><img src="https://github.com/bertel2020/HA-kostal_piko/actions/workflows/hassfest.yaml/badge.svg" alt="hassfest"></a>
+  <a href="https://github.com/bertel2020/HA-kostal_piko/actions/workflows/hacs.yaml"><img src="https://github.com/bertel2020/HA-kostal_piko/actions/workflows/hacs.yaml/badge.svg" alt="HACS"></a>
+  <a href="https://github.com/bertel2020/HA-kostal_piko/actions/workflows/tests.yaml"><img src="https://github.com/bertel2020/HA-kostal_piko/actions/workflows/tests.yaml/badge.svg" alt="Tests"></a>
 </p>
 
 <p align="center">
