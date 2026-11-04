@@ -8,6 +8,7 @@
   <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg" alt="HACS Custom"></a>
   <a href="https://www.home-assistant.io/"><img src="https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2.svg?logo=home-assistant&logoColor=white" alt="Home Assistant"></a>
   <a href="https://github.com/bertel2020/HA-kostal_piko/releases"><img src="https://img.shields.io/github/v/release/bertel2020/HA-kostal_piko?sort=semver&include_prereleases" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/bertel2020/HA-kostal_piko" alt="License"></a>
 </p>
 
 <p align="center">
@@ -132,6 +133,8 @@ This is an independent, community-developed integration. It is not affiliated wi
 
 "Kostal" and "Piko" as well as all other product and company names mentioned in this repository are trademarks or registered trademarks of their respective owners. They are mentioned solely to describe which hardware this integration is compatible with. "Home Assistant" is a trademark of the Open Home Foundation.
 
-## Origin & licence
+## Copyright & Licence
 
-Originally derived from [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). The original repository contains no licence file; this repository therefore does not grant a licence of its own either.
+Copyright © 2026 bertel2020. Licensed under the [MIT License](LICENSE).
+
+Originally derived from [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant) (see [Acknowledgements](#acknowledgements)). The original repository contains no licence file.
