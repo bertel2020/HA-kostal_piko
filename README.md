@@ -26,13 +26,13 @@
 
 <p align="center"><em><a href="README.en.md">🇬🇧 English version</a></em></p>
 
-Eine über die Oberfläche konfigurierbare Home-Assistant-Custom-Integration für **Kostal-Piko-Wechselrichter** mit Weboberfläche. Sie liest die Werte der Weboberfläche des Wechselrichters (`/index.fhtml`) über die Bibliothek [`kostalpiko`](https://pypi.org/project/kostalpiko/) aus und stellt sie als `sensor`-Entitäten bereit. Die Integration nutzt einen Config-Flow, einen gemeinsam genutzten `DataUpdateCoordinator` und typisierte Sensoren mit `device_class` und `state_class` – damit funktionieren Langzeitstatistiken und das Energie-Dashboard.
+Eine über die Oberfläche konfigurierbare Home-Assistant-Custom-Integration für **Kostal-Piko-Wechselrichter** mit Weboberfläche. Sie liest die Werte der Weboberfläche des Wechselrichters (`/index.fhtml`) mit einem eigenen asynchronen Client aus (das Auslesen der Seiten beruht auf der Bibliothek [`kostalpiko`](https://github.com/rcasula/kostalpiko), siehe [Danksagung](#danksagung)) und stellt sie als `sensor`-Entitäten bereit. Die Integration nutzt einen Config-Flow, einen gemeinsam genutzten `DataUpdateCoordinator` und typisierte Sensoren mit `device_class` und `state_class` – damit funktionieren Langzeitstatistiken und das Energie-Dashboard.
 
 Dieses Projekt baut auf [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant) auf (siehe [Danksagung](#danksagung)). Entity-IDs und `unique_id` der bestehenden Sensoren sind unverändert, sodass sich die Integration ohne Verlust von Verlauf und Statistiken austauschen lässt (siehe [Umstieg vom Upstream-Repository](#umstieg-vom-upstream-repository)).
 
 ## Voraussetzungen
 
-- Home Assistant **2024.12.0** oder neuer.
+- Home Assistant **2025.8.0** oder neuer.
 - Ein Kostal-Piko-Wechselrichter, dessen Weboberfläche im Netzwerk erreichbar ist (Standard-Zugang: Benutzer `pvserver`, Passwort `pvwr`).
 
 ## Installation
@@ -116,7 +116,7 @@ Im Standby (nachts) ist der Wechselrichter erreichbar und meldet den Status „A
 
 ### BA-Sensor
 
-Die Sensoren *Solar generator power* und *Consumption phase 1/2/3* setzen einen Kostal-BA-Sensor (Hausverbrauchsmessung) voraus. Ist keiner installiert, zeigen sie „unbekannt“.
+Die Sensoren *Solar generator power* und *Consumption phase 1/2/3* setzen einen Kostal-BA-Sensor (Hausverbrauchsmessung) voraus. Liefert die BA-Seite des Wechselrichters nur Nullwerte, zeigen die Sensoren 0 W; liefert sie keine Werte, sind sie „unbekannt“.
 
 ## Umstieg vom Upstream-Repository
 
@@ -141,6 +141,8 @@ Siehe [CHANGELOG.md](CHANGELOG.md).
 ## Danksagung
 
 Ein herzliches **Dankeschön an [@rcasula](https://github.com/rcasula)**, den Autor der ursprünglichen Integration [kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Ohne seine Arbeit gäbe es dieses Projekt nicht – es basiert auf seinem Code und seiner Idee, Kostal-Piko-Wechselrichter in Home Assistant zu bringen.
+
+Das Auslesen der Wechselrichter-Seiten stammt aus der Bibliothek [`kostalpiko`](https://github.com/rcasula/kostalpiko) (MIT-Lizenz) und damit von **Tafkas** ([KostalPikoPy](https://github.com/Tafkas/KostalPikoPy)), **Giel Janssens** ([gieljnssns](https://github.com/gieljnssns/KostalPyko)) und den weiteren Mitwirkenden (maubreville, rcasula, britiger, Abildgren). Die Herkunft und der Lizenztext stehen in der Datei [NOTICE](NOTICE). Auch dafür herzlichen Dank!
 
 Ebenso danke an [@m-rossi](https://github.com/m-rossi) für seine Beiträge zum Upstream-Projekt (Tagesenergie für das Energie-Dashboard, Anpassungen an neue Home-Assistant-Versionen, `state_class`/`device_class` der Sensoren) sowie an alle weiteren, die dort Fehler gemeldet und Verbesserungen beigetragen haben.
 

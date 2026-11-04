@@ -5,6 +5,18 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
+## 2.2.0 – 2026-11-04
+
+**Neu**
+- **Eigener Client** (`client.py`) statt der Bibliothek `kostalpiko`: asynchron über die HTTP-Verbindung von Home Assistant, ohne private Methoden und ohne Versionsbegrenzung. Das Auslesen der Seiten beruht auf `kostalpiko` (MIT, siehe [NOTICE](NOTICE)). Getestet mit Beispielseiten von fünf Layouts und den Seiten eines echten PIKO 10.1.
+- **Falsches Passwort wird erkannt** (HTTP 401): Beim Einrichten erscheint „Benutzername oder Passwort ist falsch“, im Betrieb startet Home Assistant eine **erneute Anmeldung** (Reauth) statt endlos Fehler zu loggen.
+- **Skript `scripts/check_inverter.py`** liest einen Wechselrichter mit dem Client aus und gibt alle Werte aus (Passwort wird abgefragt).
+
+**Geändert**
+- Abhängigkeit `lxml` statt `kostalpiko`. Mindestversion Home Assistant **2025.8.0** (Options-Flow lädt die Integration selbst neu).
+- Eine unbekannte Seitenstruktur (andere Anzahl von Werten) wird als Fehler gemeldet statt still „unbekannt“ zu liefern.
+- Die BA-Sensoren zeigen die vom Wechselrichter gelieferten Werte (z. B. 0 W) statt eines Textes „No BA sensor installed“.
+
 ## 2.1.0 – 2026-11-04
 
 **Neu**

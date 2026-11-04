@@ -26,13 +26,13 @@
 
 <p align="center"><em><a href="README.md">🇩🇪 Deutsche Version</a></em></p>
 
-A UI-configurable Home Assistant custom integration for **Kostal Piko inverters** with a web interface. It reads the values of the inverter's web interface (`/index.fhtml`) through the [`kostalpiko`](https://pypi.org/project/kostalpiko/) library and exposes them as `sensor` entities. The integration uses a config flow, a shared `DataUpdateCoordinator` and typed sensors with `device_class` and `state_class` – so long-term statistics and the Energy dashboard work.
+A UI-configurable Home Assistant custom integration for **Kostal Piko inverters** with a web interface. It reads the values of the inverter's web interface (`/index.fhtml`) with its own asynchronous client (reading the pages is based on the [`kostalpiko`](https://github.com/rcasula/kostalpiko) library, see [Acknowledgements](#acknowledgements)) and exposes them as `sensor` entities. The integration uses a config flow, a shared `DataUpdateCoordinator` and typed sensors with `device_class` and `state_class` – so long-term statistics and the Energy dashboard work.
 
 This project builds on [rcasula/kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant) (see [Acknowledgements](#acknowledgements)). Entity IDs and `unique_id` of the existing sensors are unchanged, so the integration can be swapped without losing history or statistics (see [Switching from the upstream repository](#switching-from-the-upstream-repository)).
 
 ## Requirements
 
-- Home Assistant **2024.12.0** or newer.
+- Home Assistant **2025.8.0** or newer.
 - A Kostal Piko inverter whose web interface is reachable on the network (default login: user `pvserver`, password `pvwr`).
 
 ## Installation
@@ -116,7 +116,7 @@ In standby (at night) the inverter is reachable and reports the status "Aus" (of
 
 ### BA sensor
 
-The sensors *Solar generator power* and *Consumption phase 1/2/3* require a Kostal BA sensor (household consumption metering). Without one they show "unknown".
+The sensors *Solar generator power* and *Consumption phase 1/2/3* require a Kostal BA sensor (household consumption metering). If the BA page of the inverter only returns zeros the sensors show 0 W; if it returns no values they are "unknown".
 
 ## Switching from the upstream repository
 
@@ -141,6 +141,8 @@ See [CHANGELOG.en.md](CHANGELOG.en.md).
 ## Acknowledgements
 
 A heartfelt **thank you to [@rcasula](https://github.com/rcasula)**, the author of the original integration [kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Without their work this project would not exist – it is based on their code and their idea of bringing Kostal Piko inverters into Home Assistant.
+
+Reading the inverter pages comes from the [`kostalpiko`](https://github.com/rcasula/kostalpiko) library (MIT licence) and thus from **Tafkas** ([KostalPikoPy](https://github.com/Tafkas/KostalPikoPy)), **Giel Janssens** ([gieljnssns](https://github.com/gieljnssns/KostalPyko)) and the other contributors (maubreville, rcasula, britiger, Abildgren). Origin and licence text are in the file [NOTICE](NOTICE). Many thanks for that, too!
 
 Thanks as well to [@m-rossi](https://github.com/m-rossi) for their contributions to the upstream project (daily energy for the Energy dashboard, adaptations to new Home Assistant versions, `state_class`/`device_class` of the sensors) and to everyone else who reported issues and contributed improvements there.
 

@@ -5,6 +5,18 @@
 All notable changes to this project are documented here.
 Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 
+## 2.2.0 – 2026-11-04
+
+**New**
+- **Own client** (`client.py`) instead of the `kostalpiko` library: asynchronous through Home Assistant's HTTP connection, without private methods and without a version limit. Reading the pages is based on `kostalpiko` (MIT, see [NOTICE](NOTICE)). Tested with sample pages of five layouts and the pages of a real PIKO 10.1.
+- **Wrong passwords are detected** (HTTP 401): setup shows "Invalid username or password", during operation Home Assistant starts a **re-authentication** instead of logging errors forever.
+- **Script `scripts/check_inverter.py`** reads an inverter with the client and prints all values (the password is asked for).
+
+**Changed**
+- Dependency `lxml` instead of `kostalpiko`. Minimum Home Assistant **2025.8.0** (the options flow reloads the integration itself).
+- An unknown page structure (different number of values) is reported as an error instead of silently returning "unknown".
+- The BA sensors show the values returned by the inverter (e.g. 0 W) instead of the text "No BA sensor installed".
+
 ## 2.1.0 – 2026-11-04
 
 **New**
