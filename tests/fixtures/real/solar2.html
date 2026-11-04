@@ -1,0 +1,298 @@
+<!DOCtype HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<meta name="Generator" CONTENT="ChrisB">
+<title>PV Webserver</title>
+</head>
+<body nof="(MB=(DefaultMasterborder, 65, 60, 150, 10), L=(HomeLayout, 700, 600))" bgcolor="#EAF7F7" text="#000000" link="#0033CC" vlink="#990099" alink="#FF0000" topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
+<form method="post" action="">
+<table cellspacing="0" cellpadding="0" width="800" nof="ly">
+<tr><td width="190" height="5"></td>
+<td></td></tr>
+<tr valign="top" align="left">
+<td height="55"></td> 
+<td colspan="2" width="600">
+<font face="Arial,Helvetica,Geneva,Sans-serif,sans-serif" size="+3">
+PIKO 10.1
+<br><font size="+1">                 
+PIKO_WR (255)
+</font>
+</font>
+<td colspan="1" width="50"><img alt="Logo" height="42" width="130" src="KSE.gif"></td>
+</tr>
+</table>
+
+<table Border="0" width="100%"><tr>
+<td width="150"></td>
+<td> <hr> </td>
+</tr></table>
+<font face="Arial,Helvetica,Geneva,Sans-serif,sans-serif">
+<table Border="0" width="100%">
+<tr>
+<td width="150" height="55"></td>
+<td>
+<font size="+2"><U>Einstellungen
+</U></font></td><td> &nbsp &nbsp &nbsp &nbsp
+ver 5.44
+</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="35" align="right">S-Nr.:</td>
+<td>
+TESTSERIAL001</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="35" align="right">Artikelnummer:</td>
+<td>
+10098705</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Sprache:</td>
+<td><select name="opWebSprache" size="1">
+<option value="0" selected>Deutsch</option>
+<option Value="1"  >English</option>
+<option Value="2"  >Español</option>
+<option value="3"  >Italiano</option>
+<option value="4"  >Français</option>
+<option value="5"  >Greek</option>
+<option value="6"  >Portugûes</option>
+<option value="7"  >Nederlands</option>
+<option value="8"  >Ceština</option>
+<option value="9"  >Magyar</option>
+<option value="10"  >&#20013;&#25991;</option>
+</select></td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Name:</td>
+<td><!--input type="edit" name="edWrName" size="16" maxlength="15"-->
+<INPUT TYPE="Text" NAME="edWrName" VALUE="PIKO_WR" SIZE="16" MAXLENGTH="15">&nbsp<font color="FF0000"><b> 
+</b></font></td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">WR-Bus (RS485) Adresse:</td>
+<td><!--input type="edit" name="edWrAdr" size="3" maxlength="3"-->
+<INPUT TYPE="Text" NAME="edWrAdr" VALUE="255" SIZE="3" MAXLENGTH="3"> (1..220)</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Datenerfassung alle</td>
+<td><select name="opLogIntervall" size="1">
+<!--option>15 Minuten</option-->
+ 
+<option selected>15 </option>
+<option>60 </option>
+ 
+</select> Minuten</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Funktion Schaltausgang:</td>
+<td><select name="opSchaltOut" size="1">
+<option value="S0">S0-Pulse</option>
+<option value="Al">Alarmausgang</option>
+<option value="EV" selected>Eigenverbrauchssteuerung</option>
+ 
+</select> (S0/AL-Out)</td>
+
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Eigenverbrauchssteuerung:</td>
+<td nowrap>
+<INPUT TYPE="Radio" NAME="rbEVFunk" VALUE="EVF1"> Funktion 1
+</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200"></td>
+<td>
+<table><tbody><tr>
+<td width="23"> </td>
+<td width="400">
+Leistungsgrenze
+ <INPUT TYPE="Text" NAME="edEV_Leistung" VALUE="1100" SIZE="6" MAXLENGTH="6"> W
+</td>
+</tr><tr>
+<td width="23"> </td>
+<td width="400" height="30">
+stabiles Überschreiten der Grenze 
+ <INPUT TYPE="Text" NAME="edEV_Grenze" VALUE="30" SIZE="3" MAXLENGTH="3"> 
+
+ Minuten
+</td>
+</tr><tr>
+<td width="23"> </td>
+<td width="400" height="30">
+Laufzeit 
+ <INPUT TYPE="Text" NAME="edEV_Laufzeit" VALUE="60" SIZE="3" MAXLENGTH="3"> 
+ Minuten
+</td>
+</tr><tr>
+<td width="23"> </td>
+<td width="400" height="30">
+Aktivierung 
+ <INPUT TYPE="Text" NAME="edEV_AktiAnz" VALUE="5" SIZE="3" MAXLENGTH="3"> 
+ Anzahl / Tag
+</td>
+</tr><tr>
+<td height="35" colspan="3" valign="bottom">
+<INPUT TYPE="Radio" NAME="rbEVFunk" VALUE="EVF2" CHECKED> Funktion 2
+</td>
+</tr><tr>
+
+<td width="23"></td>
+<td>
+
+<table>
+<tr><td>
+Einschaltgrenze 
+</td><td>
+ <INPUT TYPE="Text" NAME="edEV_LeistungE" VALUE="2000" SIZE="6" MAXLENGTH="6"> W
+</td>
+</tr><tr>
+<td>
+Ausschaltgrenze 
+</td><td>
+ <INPUT TYPE="Text" NAME="edEV_LeistungA" VALUE="1000" SIZE="6" MAXLENGTH="6"> W
+</td>
+</tr>
+</table>
+</td>
+</tr><tr>
+<td colspan="3" height="35">
+<INPUT TYPE="Checkbox" NAME="cbEVVerz" VALUE="EVVerz" CHECKED>Verzögerung bei Leistungsabfall / Störung
+</td>
+</tr><tr>
+<td width="23"></td>
+<td>
+<INPUT TYPE="Text" NAME="edEV_VerzZ" VALUE="5" SIZE="3" MAXLENGTH="3"> 
+ Minuten
+</td></tr>
+</tbody></table>
+</td>
+</tr><tr>
+
+<td width="150"></td>
+<td width="200" height="40" align="right">Funktion analoge Eingänge:</td>
+<td><select name="opFunkAI" size="1">
+<option value="Se" selected>Sensoren</option>
+<option value="PR">Wirkleistungssteuerung 
+
+    
+</select></td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Netzwerk: </td>
+<td>
+<INPUT TYPE="Radio" NAME="rbManNetz" VALUE="AIP">Auto IP / DHCP
+</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="30"></td>
+<td>
+<INPUT TYPE="Radio" NAME="rbManNetz" VALUE="MIP" CHECKED> manuelle Netzwerkkonfiguration:
+</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="30"></td>
+<td><table><tr>
+<td width="23"> </td>
+<td width="130">WR IP-Adresse:</td>
+<td nowrap>
+<!--input type="text" name="edWrIp1" size="3" maxlength=3-->
+<INPUT TYPE="Text" NAME="edWrIp1" VALUE="192" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edWrIp2" VALUE="168" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edWrIp3" VALUE="1" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edWrIp4" VALUE="50" SIZE="3" MAXLENGTH="3">
+</td>
+</tr><tr>
+<td width="23"> </td>
+<td width="130">Subnetmaske:</td>
+<td nowrap>          
+<!--input type="text" name="edWrIp1" size="3" maxlength=3-->
+<INPUT TYPE="Text" NAME="edSubNetM1" VALUE="255" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edSubNetM2" VALUE="255" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edSubNetM3" VALUE="255" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edSubNetM4" VALUE="0" SIZE="3" MAXLENGTH="3">
+</td></tr>
+</table><table><tr>
+<td width="460" height="35" valign="bottom" nowrap>
+<INPUT TYPE="Checkbox" NAME="cbExtRouter" VALUE="ExtRouter" CHECKED>externer Router  (muss innerhalb des Subnetzes liegen)
+</td></tr>
+</table><table><tr>
+<td width="23"> </td>
+<td width="160" nowrap>Router IP-Adresse:</td>
+<td nowrap>          
+<!--input type="text" name="edRouterIp1" size="3" maxlength="3"-->
+<INPUT TYPE="Text" NAME="edRouter1" VALUE="192" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edRouter2" VALUE="168" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edRouter3" VALUE="1" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edRouter4" VALUE="1" SIZE="3" MAXLENGTH="3">
+</td>
+</tr><tr>
+<td width="23"> </td>
+<td width="160" nowrap>DNS Serveradresse:</td>
+<td nowrap>           
+<!--input type="text" name="edDNSIp1" size="3" maxlength="3"-->
+<INPUT TYPE="Text" NAME="edDNSserv1" VALUE="192" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edDNSserv2" VALUE="168" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edDNSserv3" VALUE="1" SIZE="3" MAXLENGTH="3">. 
+<INPUT TYPE="Text" NAME="edDNSserv4" VALUE="1" SIZE="3" MAXLENGTH="3">
+</td>
+</tr></table></td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Amtswahl:</td>
+<td>
+<INPUT TYPE="Text" NAME="edAmtswahl" VALUE="0" SIZE="5" MAXLENGTH="5">&nbsp(nur bei Analogmodem und TK-Anlage)
+</td>
+<td>&nbsp</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">GSM-PIN:</td>
+<td>
+<INPUT TYPE="Text" NAME="edGSM_Pin" VALUE="****" SIZE="5" MAXLENGTH="4">
+</td>
+<td>&nbsp</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">neues Login-Passwort: </td>
+<td>
+<input type="password" name="edLogin1" size="16" maxlength="15">
+&nbsp Wiederholung:
+<input type="password" name="edLogin2" size="16" maxlength="15">
+</td>
+</tr><tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Portalcode: </td>
+<td>
+<input type="text" name="edDI" size="16" maxlength="30">
+ 
+</td>
+</tr>
+
+
+<tr>
+<td width="150"></td>
+<td width="200" height="40" align="right">Datenexport: </td>
+<td>
+<INPUT TYPE="Checkbox" NAME="cbPortal" VALUE="cbPortal">Portal: -
+</td>
+</tr>
+
+<tr><td>
+<input type="hidden" name="edPortal" value="43" size="3" maxlength="3">
+</td></tr>
+</table>
+</font>
+<table Border="0" width="100%">
+<tr>
+<td width="310" height="60"></td>
+<td><input type="submit" Value="übernehmen"></td>       
+</tr></table>
+</form>
+<hr><br>
+<table align="left"><tr><td  width="160">&nbsp</td><td>
+<font face="Arial,Helvetica,Geneva,Sans-serif">&nbsp&nbsp
+&nbsp<a href="index.fhtml"> Zurück zur Hauptseite </a>
+&nbsp
+</font></td></tr></table>
+</body>
+</html>
