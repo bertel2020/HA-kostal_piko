@@ -7,7 +7,7 @@ from kostalpiko.kostalpiko import Piko
 
 from requests.exceptions import RequestException
 
-from homeassistant import config_entries, exceptions
+from homeassistant import config_entries
 import homeassistant.helpers.config_validation as cv
 
 from homeassistant.const import (
@@ -58,20 +58,23 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return True
         return False
 
-    def _check_host(self, host, username, password) -> bool:
-        """Check if we can connect to the kostal inverter."""
+    def _check_host(self, host, username, password):
+        """Return the inverter info (serial, model) or None if unreachable.
+
+        The kostalpiko library swallows connection errors and returns None,
+        which also covers wrong credentials (HTTP 401).
+        """
         piko = Piko(host, username, password)
         try:
-            response = piko._get_info()
+            info = piko._get_info()
         except RequestException:
-            self._errors[CONF_HOST] = "could_not_connect"
-            return False
+            return None
         except Exception:  # noqa: BLE001
             _LOGGER.exception("Unexpected error while connecting to Kostal inverter")
-            self._errors[CONF_HOST] = "could_not_connect"
-            return False
-
-        return True
+            return None
+        if not info or len(info) < 2:
+            return None
+        return info
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -87,10 +90,12 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 username = user_input[CONF_USERNAME]
                 password = user_input[CONF_PASSWORD]
                 conditions = user_input[CONF_MONITORED_CONDITIONS]
-                can_connect = await self.hass.async_add_executor_job(
+                info = await self.hass.async_add_executor_job(
                     self._check_host, host, username, password
                 )
-                if can_connect:
+                if info is None:
+                    self._errors[CONF_HOST] = "could_not_connect"
+                else:
                     return self.async_create_entry(
                         title=name,
                         data={
@@ -130,11 +135,3 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=setup_schema, errors=self._errors
         )
-
-
-class CannotConnect(exceptions.HomeAssistantError):
-    """Error to indicate we cannot connect."""
-
-
-class InvalidAuth(exceptions.HomeAssistantError):
-    """Error to indicate there is invalid auth."""
