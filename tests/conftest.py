@@ -3,6 +3,12 @@ from unittest.mock import patch
 
 import pytest
 
+from custom_components.kostal.client import (
+    KostalAuthError,
+    KostalConnectionError,
+    PikoInfo,
+)
+
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
@@ -11,7 +17,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 
 class FakeData:
-    """Stand-in for kostalpiko.PikoData with the values of a real inverter."""
+    """Stand-in for client.PikoData with the values of a real inverter."""
 
     def __init__(self, **values):
         self.values = {
@@ -26,64 +32,67 @@ class FakeData:
             "string3_current": 0.18,
             "l1_voltage": 234,
             "l1_power": 0,
-            "piko_status": "Einspeisen (MPP)",
+            "status": "Einspeisen (MPP)",
         }
         self.values.update(values)
 
-    def __getattr__(self, name):
-        if name.startswith("get_"):
-            return lambda: self.values.get(name[4:])
-        raise AttributeError(name)
+    def get(self, name):
+        return self.values.get(name)
 
 
-class FakePikoBAData:
-    """Stand-in for PikoBAData without BA hardware."""
+class FakeBAData:
+    """Stand-in for client.PikoBAData without BA hardware."""
 
-    def get_solar_generator_power(self):
-        return "No BA sensor installed"
+    def get(self, name):
+        return None
 
 
-class FakePiko:
-    """Stand-in for kostalpiko.Piko without network access."""
+class FakeClient:
+    """Stand-in for client.KostalClient without network access."""
 
-    info = ["SN123", "PIKO 10"]
+    info = PikoInfo("SN123", "PIKO 10")  # None: inverter does not answer
     data_values: dict = {}
     fail = False  # simulate an unreachable inverter
+    auth_fail = False  # simulate wrong credentials
     ba_fail = False  # simulate a failing BA request only
 
-    def __init__(self, host=None, username="pvserver", password="pvwr"):
+    def __init__(self, session, host, username, password):
         self.host = host
+        self.username = username
+        self.password = password
 
-    def _get_info(self):
-        return FakePiko.info
+    def _check(self):
+        if FakeClient.auth_fail or (FakeClient.info is not None and self.password == "wrong"):
+            raise KostalAuthError("invalid credentials")
+        if FakeClient.fail:
+            raise KostalConnectionError("no response")
 
-    def _get_raw_content(self):
-        # like the real library: None on connection errors and timeouts
-        return None if FakePiko.fail else ["raw"]
+    async def async_get_info(self):
+        self._check()
+        if FakeClient.info is None:
+            raise KostalConnectionError("no response")
+        return FakeClient.info
 
-    def _get_content_of_own_consumption(self):
-        if FakePiko.ba_fail:
-            raise ConnectionError("BA failed")
-        return []
+    async def async_get_data(self):
+        self._check()
+        return FakeData(**FakeClient.data_values)
+
+    async def async_get_ba_data(self):
+        if FakeClient.ba_fail:
+            raise KostalConnectionError("BA failed")
+        return FakeBAData()
 
 
 @pytest.fixture
 def fake_piko():
-    """Patch the Piko client everywhere it is used."""
-    FakePiko.info = ["SN123", "PIKO 10"]
-    FakePiko.data_values = {}
-    FakePiko.fail = False
-    FakePiko.ba_fail = False
+    """Patch the client everywhere it is used."""
+    FakeClient.info = PikoInfo("SN123", "PIKO 10")
+    FakeClient.data_values = {}
+    FakeClient.fail = False
+    FakeClient.auth_fail = False
+    FakeClient.ba_fail = False
     with (
-        patch("custom_components.kostal.Piko", FakePiko),
-        patch("custom_components.kostal.config_flow.Piko", FakePiko),
-        patch(
-            "custom_components.kostal.coordinator.PikoData",
-            lambda raw: FakeData(**FakePiko.data_values),
-        ),
-        patch(
-            "custom_components.kostal.coordinator.PikoBAData",
-            lambda raw: FakePikoBAData(),
-        ),
+        patch("custom_components.kostal.KostalClient", FakeClient),
+        patch("custom_components.kostal.config_flow.KostalClient", FakeClient),
     ):
-        yield FakePiko
+        yield FakeClient

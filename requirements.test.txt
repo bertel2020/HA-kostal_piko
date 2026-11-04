@@ -1,4 +1,4 @@
 pytest
 pytest-cov
 pytest-homeassistant-custom-component
-kostalpiko>=0.6,<0.7
+lxml

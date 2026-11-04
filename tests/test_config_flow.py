@@ -34,13 +34,13 @@ async def test_user_flow_creates_entry(hass, fake_piko):
 
 
 async def test_unreachable_inverter_shows_error(hass, fake_piko):
-    fake_piko.info = None  # kostalpiko returns None on errors and wrong passwords
+    fake_piko.info = None  # the inverter does not answer
     result = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], USER_INPUT
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"host": "could_not_connect"}
+    assert result["errors"] == {"base": "could_not_connect"}
 
 
 async def test_same_inverter_cannot_be_added_twice(hass, fake_piko):
@@ -149,4 +149,50 @@ async def test_reconfigure_unreachable_shows_error(hass, fake_piko):
         {"host": "http://10.0.0.5", "username": "pvserver", "password": "pvwr"},
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"host": "could_not_connect"}
+    assert result["errors"] == {"base": "could_not_connect"}
+
+
+async def test_wrong_password_shows_invalid_auth(hass, fake_piko):
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**USER_INPUT, "password": "wrong"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+
+
+async def test_reauth_updates_the_password(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="SN123",
+        title="kostal_piko",
+        data={**USER_INPUT, "password": "wrong"},
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"username": "pvserver", "password": "right"}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data["password"] == "right"
+    assert entry.data["host"] == USER_INPUT["host"]
+
+
+async def test_reauth_with_wrong_password_stays_in_form(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="SN123", title="kostal_piko", data=USER_INPUT
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"username": "pvserver", "password": "wrong"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}

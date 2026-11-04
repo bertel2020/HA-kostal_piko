@@ -20,16 +20,26 @@
           "username": "Benutzername",
           "password": "Passwort"
         }
+      },
+      "reauth_confirm": {
+        "title": "Kostal-Piko-Anmeldung",
+        "description": "Der Wechselrichter unter {host} hat die Anmeldung abgelehnt. Gib den aktuellen Benutzernamen und das Passwort ein.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
       }
     },
     "error": {
       "could_not_connect": "Verbindung zum Wechselrichter fehlgeschlagen. Prüfe Host, Benutzername und Passwort.",
-      "host_exists": "Dieser Host ist bereits eingerichtet."
+      "host_exists": "Dieser Host ist bereits eingerichtet.",
+      "invalid_auth": "Benutzername oder Passwort ist falsch."
     },
     "abort": {
       "already_configured": "Dieser Wechselrichter ist bereits eingerichtet.",
       "reconfigure_successful": "Die Verbindung wurde aktualisiert.",
-      "wrong_device": "Diese Adresse gehört zu einem anderen Wechselrichter (Seriennummer stimmt nicht überein)."
+      "wrong_device": "Diese Adresse gehört zu einem anderen Wechselrichter (Seriennummer stimmt nicht überein).",
+      "reauth_successful": "Die Anmeldung wurde aktualisiert."
     }
   },
   "options": {

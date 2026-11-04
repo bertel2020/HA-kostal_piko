@@ -3,8 +3,6 @@
 import logging
 from dataclasses import dataclass
 
-from kostalpiko.kostalpiko import Piko
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
@@ -13,14 +11,16 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .client import KostalAuthError, KostalClient, KostalError
 from .configuration_schema import CONFIG_SCHEMA_ROOT
 from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 VERSION = __version__
 
 PLATFORMS = ["sensor"]
@@ -48,42 +48,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
 
     conf = CONFIG_SCHEMA_ROOT(data)
 
-    piko = Piko(conf[CONF_HOST], conf[CONF_USERNAME], conf[CONF_PASSWORD])
+    client = KostalClient(
+        async_get_clientsession(hass),
+        conf[CONF_HOST],
+        conf[CONF_USERNAME],
+        conf[CONF_PASSWORD],
+    )
 
     # The serial number is part of the unique_id of every entity, so it has
     # to be known before any sensor is created. If the inverter is not
     # reachable Home Assistant retries automatically.
     try:
-        info = await hass.async_add_executor_job(piko._get_info)
-    except Exception as err:  # noqa: BLE001
+        info = await client.async_get_info()
+    except KostalAuthError as err:
+        raise ConfigEntryAuthFailed("Invalid username or password") from err
+    except KostalError as err:
         raise ConfigEntryNotReady(f"Cannot read inverter info: {err}") from err
-    if not info or len(info) < 2:
-        raise ConfigEntryNotReady("Kostal inverter not reachable")
 
     # Entries created by older versions have no unique_id. Add it, so the
     # config flow can detect duplicates. Entities are not affected.
     if entry.unique_id is None:
-        hass.config_entries.async_update_entry(entry, unique_id=info[0])
+        hass.config_entries.async_update_entry(entry, unique_id=info.serial_number)
 
-    coordinator = KostalCoordinator(hass, entry, piko)
+    coordinator = KostalCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = KostalRuntimeData(
         coordinator=coordinator,
-        serial_number=info[0],
-        model=info[1],
+        serial_number=info.serial_number,
+        model=info.model,
         monitored_conditions=conf[CONF_MONITORED_CONDITIONS],
     )
 
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
-
-
-async def _async_update_listener(hass: HomeAssistant, entry: KostalConfigEntry) -> None:
-    """Reload the entry when the options (monitored sensors) changed."""
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bool:

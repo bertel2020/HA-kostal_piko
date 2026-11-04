@@ -195,3 +195,33 @@ async def test_unreachable_inverter_at_first_poll_is_retried(hass, fake_piko):
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+def _reauth_flows(hass):
+    return [
+        flow
+        for flow in hass.config_entries.flow.async_progress()
+        if flow["context"]["source"] == "reauth"
+    ]
+
+
+async def test_wrong_password_at_setup_starts_reauth(hass, fake_piko):
+    fake_piko.auth_fail = True
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    assert len(_reauth_flows(hass)) == 1
+
+
+async def test_password_change_during_operation_starts_reauth(hass, fake_piko):
+    entry = await _setup(hass)
+    assert not _reauth_flows(hass)
+
+    fake_piko.auth_fail = True  # password was changed on the inverter
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert len(_reauth_flows(hass)) == 1

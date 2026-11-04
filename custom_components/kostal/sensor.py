@@ -23,8 +23,8 @@ PARALLEL_UPDATES = 0
 
 def _string_power(data, string):
     """Return the power of one string in W (voltage * current), or None."""
-    voltage = getattr(data, f"get_string{string}_voltage")()
-    current = getattr(data, f"get_string{string}_current")()
+    voltage = data.get(f"string{string}_voltage")
+    current = data.get(f"string{string}_current")
     if voltage is None or current is None:
         return None
     return round(voltage * current)
@@ -43,37 +43,29 @@ def _dc_power(data):
 def _efficiency(data):
     """Return the inverter efficiency in percent (AC power / DC power).
 
-    Returns None while there is no DC input (night), instead of a bogus 0 %.
+    Returns None while there is no DC input (standby), instead of a bogus 0 %.
     """
-    ac = data.get_current_power()
+    ac = data.get("current_power")
     dc = _dc_power(data)
     if ac is None or not dc or dc <= 0:
         return None
     return round(ac / dc * 100, 1)
 
 
-# sensor type -> (key in coordinator data, getter name or function)
+# sensor type -> (key in coordinator data, value name or function)
+_DATA_SENSORS = (
+    "current_power", "total_energy", "daily_energy",
+    "string1_voltage", "string1_current", "string2_voltage", "string2_current",
+    "string3_voltage", "string3_current",
+    "l1_voltage", "l1_power", "l2_voltage", "l2_power", "l3_voltage", "l3_power",
+    "status",
+)  # fmt: skip
+_BA_SENSORS = (
+    "solar_generator_power", "consumption_phase_1", "consumption_phase_2", "consumption_phase_3",
+)  # fmt: skip
 VALUE_GETTERS = {
-    "current_power": ("data", "get_current_power"),
-    "total_energy": ("data", "get_total_energy"),
-    "daily_energy": ("data", "get_daily_energy"),
-    "string1_voltage": ("data", "get_string1_voltage"),
-    "string1_current": ("data", "get_string1_current"),
-    "string2_voltage": ("data", "get_string2_voltage"),
-    "string2_current": ("data", "get_string2_current"),
-    "string3_voltage": ("data", "get_string3_voltage"),
-    "string3_current": ("data", "get_string3_current"),
-    "l1_voltage": ("data", "get_l1_voltage"),
-    "l1_power": ("data", "get_l1_power"),
-    "l2_voltage": ("data", "get_l2_voltage"),
-    "l2_power": ("data", "get_l2_power"),
-    "l3_voltage": ("data", "get_l3_voltage"),
-    "l3_power": ("data", "get_l3_power"),
-    "status": ("data", "get_piko_status"),
-    "solar_generator_power": ("ba_data", "get_solar_generator_power"),
-    "consumption_phase_1": ("ba_data", "get_consumption_phase_1"),
-    "consumption_phase_2": ("ba_data", "get_consumption_phase_2"),
-    "consumption_phase_3": ("ba_data", "get_consumption_phase_3"),
+    **{name: ("data", name) for name in _DATA_SENSORS},
+    **{name: ("ba_data", name) for name in _BA_SENSORS},
     "string1_power": ("data", lambda data: _string_power(data, 1)),
     "string2_power": ("data", lambda data: _string_power(data, 2)),
     "string3_power": ("data", lambda data: _string_power(data, 3)),
@@ -132,12 +124,11 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         if obj is None:
             return None
         try:
-            value = getter(obj) if callable(getter) else getattr(obj, getter)()
+            value = getter(obj) if callable(getter) else obj.get(getter)
         except (AttributeError, IndexError, TypeError, ValueError) as err:
             _LOGGER.debug("Could not read %s: %s", self.type, err)
             return None
-        # kostalpiko returns the text "No BA sensor installed" for the BA
-        # values if the hardware is missing. Numeric sensors must not get text.
+        # Numeric sensors must never get text as state.
         if self._attr_native_unit_of_measurement is not None and isinstance(value, str):
             return None
         return value

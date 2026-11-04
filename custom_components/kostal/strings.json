@@ -20,16 +20,26 @@
           "username": "Username",
           "password": "Password"
         }
+      },
+      "reauth_confirm": {
+        "title": "Kostal Piko login",
+        "description": "The inverter at {host} rejected the login. Enter the current username and password.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
       }
     },
     "error": {
       "could_not_connect": "Could not connect to the inverter. Check the host, username and password.",
-      "host_exists": "This host is already configured."
+      "host_exists": "This host is already configured.",
+      "invalid_auth": "Invalid username or password."
     },
     "abort": {
       "already_configured": "This inverter is already configured.",
       "reconfigure_successful": "The connection was updated.",
-      "wrong_device": "This address belongs to a different inverter (serial number does not match)."
+      "wrong_device": "This address belongs to a different inverter (serial number does not match).",
+      "reauth_successful": "The login was updated."
     }
   },
   "options": {

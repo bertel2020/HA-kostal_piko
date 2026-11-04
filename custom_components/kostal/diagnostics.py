@@ -17,7 +17,7 @@ def _read(obj, getter) -> Any:
     if obj is None:
         return None
     try:
-        return getter(obj) if callable(getter) else getattr(obj, getter)()
+        return getter(obj) if callable(getter) else obj.get(getter)
     except Exception as err:  # noqa: BLE001
         return f"error: {err!r}"
 

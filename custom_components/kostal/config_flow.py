@@ -1,26 +1,24 @@
 """Adds config flow for Kostal."""
 
 import logging
+
 import voluptuous as vol
 
-from kostalpiko.kostalpiko import Piko
-
-from requests.exceptions import RequestException
-
 from homeassistant import config_entries
-import homeassistant.helpers.config_validation as cv
-
 from homeassistant.const import (
-    CONF_NAME,
     CONF_HOST,
-    CONF_USERNAME,
-    CONF_PASSWORD,
     CONF_MONITORED_CONDITIONS,
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import slugify
 
-from .const import DOMAIN, DEFAULT_NAME, SENSOR_TYPES
+from .client import KostalAuthError, KostalClient, KostalError, PikoInfo
+from .const import DEFAULT_NAME, DOMAIN, SENSOR_TYPES
 
 SUPPORTED_SENSOR_TYPES = list(SENSOR_TYPES)
 
@@ -33,6 +31,7 @@ DEFAULT_MONITORED_CONDITIONS = [
 
 _LOGGER = logging.getLogger(__name__)
 
+
 @callback
 def kostal_entries(hass: HomeAssistant):
     """Return the hosts for the domain."""
@@ -42,6 +41,24 @@ def kostal_entries(hass: HomeAssistant):
         if host:
             hosts.add(host)
     return hosts
+
+
+async def async_check_connection(
+    hass: HomeAssistant, host: str, username: str, password: str
+) -> tuple[PikoInfo | None, str | None]:
+    """Try to read the inverter. Returns (info, None) or (None, error key)."""
+    client = KostalClient(async_get_clientsession(hass), host, username, password)
+    try:
+        return await client.async_get_info(), None
+    except KostalAuthError:
+        return None, "invalid_auth"
+    except KostalError as err:
+        _LOGGER.debug("Cannot connect to %s: %s", host, err)
+        return None, "could_not_connect"
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("Unexpected error while connecting to Kostal inverter")
+        return None, "could_not_connect"
+
 
 class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Kostal piko."""
@@ -59,35 +76,14 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
     def _host_in_configuration_exists(self, host) -> bool:
-        """Return True if site_id exists in configuration."""
-        if host in kostal_entries(self.hass):
-            return True
-        return False
-
-    def _check_host(self, host, username, password):
-        """Return the inverter info (serial, model) or None if unreachable.
-
-        The kostalpiko library swallows connection errors and returns None,
-        which also covers wrong credentials (HTTP 401).
-        """
-        piko = Piko(host, username, password)
-        try:
-            info = piko._get_info()
-        except RequestException:
-            return None
-        except Exception:  # noqa: BLE001
-            _LOGGER.exception("Unexpected error while connecting to Kostal inverter")
-            return None
-        if not info or len(info) < 2:
-            return None
-        return info
+        """Return True if the host is already configured."""
+        return host in kostal_entries(self.hass)
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
         self._errors = {}
 
         if user_input is not None:
-
             name = slugify(user_input.get(CONF_NAME, DEFAULT_NAME))
             if self._host_in_configuration_exists(user_input[CONF_HOST]):
                 self._errors[CONF_HOST] = "host_exists"
@@ -96,15 +92,15 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 username = user_input[CONF_USERNAME]
                 password = user_input[CONF_PASSWORD]
                 conditions = user_input[CONF_MONITORED_CONDITIONS]
-                info = await self.hass.async_add_executor_job(
-                    self._check_host, host, username, password
+                info, error = await async_check_connection(
+                    self.hass, host, username, password
                 )
-                if info is None:
-                    self._errors[CONF_HOST] = "could_not_connect"
+                if error is not None:
+                    self._errors["base"] = error
                 else:
                     # The serial number identifies the inverter, regardless of
                     # how the host URL is spelled.
-                    await self.async_set_unique_id(info[0])
+                    await self.async_set_unique_id(info.serial_number)
                     self._abort_if_unique_id_configured()
                     return self.async_create_entry(
                         title=name,
@@ -152,22 +148,20 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            info = await self.hass.async_add_executor_job(
-                self._check_host,
+            info, error = await async_check_connection(
+                self.hass,
                 user_input[CONF_HOST],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
             )
-            if info is None:
-                errors[CONF_HOST] = "could_not_connect"
-            elif entry.unique_id and info[0] != entry.unique_id:
+            if error is not None:
+                errors["base"] = error
+            elif entry.unique_id and info.serial_number != entry.unique_id:
                 return self.async_abort(reason="wrong_device")
             else:
-                # The update listener reloads the entry exactly once.
-                self.hass.config_entries.async_update_entry(
-                    entry, data={**entry.data, **user_input}
+                return self.async_update_reload_and_abort(
+                    entry, data_updates=user_input
                 )
-                return self.async_abort(reason="reconfigure_successful")
 
         current = user_input or entry.data
         schema = vol.Schema(
@@ -181,8 +175,47 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reconfigure", data_schema=schema, errors=errors
         )
 
+    async def async_step_reauth(self, entry_data):
+        """Start re-authentication after the inverter rejected the login."""
+        return await self.async_step_reauth_confirm()
 
-class KostalOptionsFlow(config_entries.OptionsFlow):
+    async def async_step_reauth_confirm(self, user_input=None):
+        """Ask for new credentials."""
+        entry = self._get_reauth_entry()
+        errors = {}
+
+        if user_input is not None:
+            info, error = await async_check_connection(
+                self.hass,
+                entry.data[CONF_HOST],
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+            )
+            if error is not None:
+                errors["base"] = error
+            elif entry.unique_id and info.serial_number != entry.unique_id:
+                return self.async_abort(reason="wrong_device")
+            else:
+                return self.async_update_reload_and_abort(
+                    entry, data_updates=user_input
+                )
+
+        current = user_input or entry.data
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME, default=current.get(CONF_USERNAME, "")): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"host": entry.data[CONF_HOST]},
+        )
+
+
+class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
     """Allow changing the monitored sensors of an existing entry."""
 
     async def async_step_init(self, user_input=None):
