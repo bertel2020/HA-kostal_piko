@@ -18,6 +18,9 @@ from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+# The coordinator bundles all requests, entities never poll on their own.
+PARALLEL_UPDATES = 0
+
 def _string_power(data, string):
     """Return the power of one string in W (voltage * current), or None."""
     voltage = getattr(data, f"get_string{string}_voltage")()
