@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bertel2020/HA-kostal_piko/main/brands/logo.png" alt="Kostal Piko" width="160">
+  <img src="https://raw.githubusercontent.com/bertel2020/HA-kostal_piko/main/brands/logo.png" alt="Kostal Piko" width="340">
 </p>
 
 <h1 align="center">Kostal Piko</h1>
