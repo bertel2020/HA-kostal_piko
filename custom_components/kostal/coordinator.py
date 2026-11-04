@@ -1,13 +1,23 @@
 """Data update coordinator for the Kostal Piko inverter."""
 
+from __future__ import annotations
+
 import logging
+from collections import deque
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
+from .calculations import dc_power, windowed_efficiency
 from .client import KostalAuthError, KostalClient, KostalError
-from .const import DOMAIN, FAILURES_BEFORE_UNAVAILABLE, MIN_TIME_BETWEEN_UPDATES
+from .const import (
+    DOMAIN,
+    EFFICIENCY_WINDOW,
+    FAILURES_BEFORE_UNAVAILABLE,
+    MIN_TIME_BETWEEN_UPDATES,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +41,22 @@ class KostalCoordinator(DataUpdateCoordinator):
         )
         self.client = client
         self._failures = 0
+        # (time, AC power, DC power) of the last EFFICIENCY_WINDOW
+        self._samples: deque = deque()
+
+    @property
+    def efficiency(self) -> float | None:
+        """Efficiency in percent, averaged over the last EFFICIENCY_WINDOW."""
+        return windowed_efficiency([(ac, dc) for _, ac, dc in self._samples])
+
+    def _record_sample(self, data) -> None:
+        now = dt_util.utcnow()
+        ac = data.get("current_power")
+        dc = dc_power(data)
+        if ac is not None and dc and dc > 0:
+            self._samples.append((now, ac, dc))
+        while self._samples and self._samples[0][0] < now - EFFICIENCY_WINDOW:
+            self._samples.popleft()
 
     async def _async_fetch(self) -> dict:
         data = await self.client.async_get_data()
@@ -61,4 +87,5 @@ class KostalCoordinator(DataUpdateCoordinator):
             )
             return self.data
         self._failures = 0
+        self._record_sample(result["data"])
         return result

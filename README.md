@@ -102,7 +102,7 @@ Die drei berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werd
 
 - **String N power** = Spannung × Strom, auf ganze Watt gerundet. Hat der Wechselrichter weniger als drei Strings, ist der Wert „unbekannt“.
 - **DC power** = Summe der vorhandenen String-Leistungen.
-- **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet. Ohne DC-Eingang (Standby) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden.
+- **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet, **gemittelt über die letzten 5 Minuten**: Es wird die Summe der AC-Leistungen durch die Summe der DC-Leistungen geteilt, Zeiten mit hoher Leistung zählen also stärker. Ein einzelner Messwert ist ungenau, weil die Ströme auf 0,01 A gerundet sind und AC- und DC-Werte nicht im selben Moment gemessen werden (der Wert eines einzelnen Abrufs schwankt bei wechselnder Einstrahlung um mehrere Prozent). Ohne DC-Eingang (Standby) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden. Er wird erst 5 Minuten nach dem letzten Wert mit DC-Eingang unbekannt.
 
 ### Diagnose
 

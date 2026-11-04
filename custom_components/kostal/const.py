@@ -15,6 +15,9 @@ DEFAULT_NAME = "Kostal Piko"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
+# The efficiency is averaged over this period (power-weighted).
+EFFICIENCY_WINDOW = timedelta(minutes=5)
+
 # Entities keep their last value for this many failed polls in a row
 # (about 1.5 minutes) before they become unavailable.
 FAILURES_BEFORE_UNAVAILABLE = 3

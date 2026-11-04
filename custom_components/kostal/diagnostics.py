@@ -43,7 +43,10 @@ async def async_get_config_entry_diagnostics(
             "has_ba_data": data.get("ba_data") is not None,
         },
         "values": {
-            sensor_type: _read(data.get(source), getter)
-            for sensor_type, (source, getter) in VALUE_GETTERS.items()
+            **{
+                sensor_type: _read(data.get(source), getter)
+                for sensor_type, (source, getter) in VALUE_GETTERS.items()
+            },
+            "efficiency": coordinator.efficiency,
         },
     }

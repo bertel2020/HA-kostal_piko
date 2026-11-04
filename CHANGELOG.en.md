@@ -13,6 +13,7 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 - **Script `scripts/check_inverter.py`** reads an inverter with the client and prints all values (the password is asked for).
 
 **Changed**
+- **Efficiency smoothed:** It is averaged over the last 5 minutes (sum AC ÷ sum DC) instead of being calculated from a single poll, which varied by several percent when the irradiation changed.
 - Dependency `lxml` instead of `kostalpiko`. Minimum Home Assistant **2025.8.0** (the options flow reloads the integration itself).
 - An unknown page structure (different number of values) is reported as an error instead of silently returning "unknown".
 - The BA sensors show the values returned by the inverter (e.g. 0 W) instead of the text "No BA sensor installed".

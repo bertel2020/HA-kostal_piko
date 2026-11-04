@@ -13,6 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import KostalConfigEntry
+from .calculations import dc_power, string_power
 from .const import DOMAIN, SENSOR_TYPES
 from .coordinator import KostalCoordinator
 
@@ -20,37 +21,6 @@ _LOGGER = logging.getLogger(__name__)
 
 # The coordinator bundles all requests, entities never poll on their own.
 PARALLEL_UPDATES = 0
-
-def _string_power(data, string):
-    """Return the power of one string in W (voltage * current), or None."""
-    voltage = data.get(f"string{string}_voltage")
-    current = data.get(f"string{string}_current")
-    if voltage is None or current is None:
-        return None
-    return round(voltage * current)
-
-
-def _dc_power(data):
-    """Return the DC input power in W: sum of the power of all strings.
-
-    Returns None if the inverter reports no string values at all.
-    """
-    powers = [_string_power(data, string) for string in (1, 2, 3)]
-    powers = [power for power in powers if power is not None]
-    return sum(powers) if powers else None
-
-
-def _efficiency(data):
-    """Return the inverter efficiency in percent (AC power / DC power).
-
-    Returns None while there is no DC input (standby), instead of a bogus 0 %.
-    """
-    ac = data.get("current_power")
-    dc = _dc_power(data)
-    if ac is None or not dc or dc <= 0:
-        return None
-    return round(ac / dc * 100, 1)
-
 
 # sensor type -> (key in coordinator data, value name or function)
 _DATA_SENSORS = (
@@ -66,11 +36,10 @@ _BA_SENSORS = (
 VALUE_GETTERS = {
     **{name: ("data", name) for name in _DATA_SENSORS},
     **{name: ("ba_data", name) for name in _BA_SENSORS},
-    "string1_power": ("data", lambda data: _string_power(data, 1)),
-    "string2_power": ("data", lambda data: _string_power(data, 2)),
-    "string3_power": ("data", lambda data: _string_power(data, 3)),
-    "dc_power": ("data", _dc_power),
-    "efficiency": ("data", _efficiency),
+    "string1_power": ("data", lambda data: string_power(data, 1)),
+    "string2_power": ("data", lambda data: string_power(data, 2)),
+    "string3_power": ("data", lambda data: string_power(data, 3)),
+    "dc_power": ("data", dc_power),
 }
 
 
@@ -119,6 +88,8 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
     @property
     def native_value(self):
         """Return the value of the sensor."""
+        if self.type == "efficiency":  # averaged over several polls
+            return self.coordinator.efficiency
         source, getter = VALUE_GETTERS[self.type]
         obj = (self.coordinator.data or {}).get(source)
         if obj is None:

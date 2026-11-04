@@ -225,3 +225,55 @@ async def test_password_change_during_operation_starts_reauth(hass, fake_piko):
     await hass.async_block_till_done()
 
     assert len(_reauth_flows(hass)) == 1
+
+
+async def test_efficiency_is_averaged_over_five_minutes(hass, fake_piko, freezer):
+    from datetime import timedelta
+
+    entry = await _setup(hass)  # 340 W AC / 343 W DC
+    coordinator = entry.runtime_data.coordinator
+    entity = "sensor.kostal_piko_efficiency"
+    assert hass.states.get(entity).state == "99.1"
+
+    # second poll: 540 W AC / 602 W DC (strings 0.33/0.34/0.31 A)
+    freezer.tick(timedelta(seconds=30))
+    fake_piko.data_values = {
+        "current_power": 540,
+        "string1_voltage": 531, "string1_current": 0.33,
+        "string2_voltage": 650, "string2_current": 0.34,
+        "string3_voltage": 665, "string3_current": 0.31,
+    }
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    # (340 + 540) / (343 + 602) = 93.1 %, not the single value 89.7 %
+    assert hass.states.get(entity).state == "93.1"
+
+    # after more than five minutes the first sample is dropped
+    freezer.tick(timedelta(minutes=5, seconds=1))
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "89.7"  # only 540 / 602 remain
+
+
+async def test_efficiency_unknown_in_standby_after_the_window(hass, fake_piko, freezer):
+    from datetime import timedelta
+
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data.coordinator
+    entity = "sensor.kostal_piko_efficiency"
+
+    fake_piko.data_values = {
+        "current_power": 0,
+        "string1_voltage": 0, "string1_current": 0.0,
+        "string2_voltage": 0, "string2_current": 0.0,
+        "string3_voltage": 0, "string3_current": 0.0,
+    }
+    freezer.tick(timedelta(seconds=30))
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "99.1"  # old sample still in window
+
+    freezer.tick(timedelta(minutes=5, seconds=1))
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "unknown"

@@ -13,6 +13,7 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 - **Skript `scripts/check_inverter.py`** liest einen Wechselrichter mit dem Client aus und gibt alle Werte aus (Passwort wird abgefragt).
 
 **Geändert**
+- **Wirkungsgrad geglättet:** Er wird über die letzten 5 Minuten gemittelt (Summe AC ÷ Summe DC) statt aus einem einzelnen Abruf berechnet, der bei wechselnder Einstrahlung um mehrere Prozent schwankte.
 - Abhängigkeit `lxml` statt `kostalpiko`. Mindestversion Home Assistant **2025.8.0** (Options-Flow lädt die Integration selbst neu).
 - Eine unbekannte Seitenstruktur (andere Anzahl von Werten) wird als Fehler gemeldet statt still „unbekannt“ zu liefern.
 - Die BA-Sensoren zeigen die vom Wechselrichter gelieferten Werte (z. B. 0 W) statt eines Textes „No BA sensor installed“.
