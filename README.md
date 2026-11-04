@@ -101,16 +101,18 @@ Es wird ein **Gerät** (benannt nach dem Titel, Hersteller Kostal, Modell und Se
 | String 1/2/3 power | `sensor.kostal_piko_string_1_power` … | W | **Berechnet:** Spannung × Strom je String |
 | DC power | `sensor.kostal_piko_dc_power` | W | **Berechnet:** Summe der String-Leistungen |
 | Efficiency | `sensor.kostal_piko_efficiency` | % | **Berechnet:** AC-Leistung ÷ DC-Leistung |
+| Average power 15 min | `sensor.kostal_piko_average_power_15_min` | W | **Berechnet:** Mittelwert der AC-Leistung über die letzten 15 Minuten |
 
 Die Namen der Sensoren sind englisch, unabhängig von der Oberflächensprache. Die Entity-ID wird von Home Assistant einmalig bei der Erstanlage vergeben und danach beibehalten.
 
 ### Berechnete Sensoren
 
-Die drei berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werden aus den String-Werten gebildet. Sie ersetzen Template-Sensoren, die dieselbe Rechnung in der `configuration.yaml` oder als Helfer erledigen.
+Die berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werden aus den String-Werten gebildet. Sie ersetzen Template-Sensoren, die dieselbe Rechnung in der `configuration.yaml` oder als Helfer erledigen.
 
 - **String N power** = Spannung × Strom, auf ganze Watt gerundet. Hat der Wechselrichter weniger als drei Strings, ist der Wert „unbekannt“.
 - **DC power** = Summe der vorhandenen String-Leistungen.
 - **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet, **gemittelt über die letzten 5 Minuten**: Es wird die Summe der AC-Leistungen durch die Summe der DC-Leistungen geteilt, Zeiten mit hoher Leistung zählen also stärker. Ein einzelner Messwert ist ungenau, weil die Ströme auf 0,01 A gerundet sind und AC- und DC-Werte nicht im selben Moment gemessen werden (der Wert eines einzelnen Abrufs schwankt bei wechselnder Einstrahlung um mehrere Prozent). Ohne DC-Eingang (Standby) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden. Er wird erst 5 Minuten nach dem letzten Wert mit DC-Eingang unbekannt.
+- **Average power 15 min** = Mittelwert der abgefragten AC-Leistung der letzten 15 Minuten, auf ganze Watt gerundet. Er entspricht einem Statistik-Helfer (Mittelwert, 15 Minuten) auf `current_power` und ersetzt ihn. Der letzte Wert bleibt auch bei längerer Pause erhalten.
 
 ### Diagnose
 

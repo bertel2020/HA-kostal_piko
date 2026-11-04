@@ -321,6 +321,35 @@ async def test_efficiency_unknown_in_standby_after_the_window(hass, fake_piko, f
     assert hass.states.get(entity).state == "unknown"
 
 
+async def test_average_power_over_fifteen_minutes(hass, fake_piko, freezer):
+    from datetime import timedelta
+
+    entry = _entry()
+    entry.data["monitored_conditions"].append("average_power_15min")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data.coordinator
+    entity = "sensor.kostal_piko_average_power_15_min"
+    state = hass.states.get(entity)
+    assert state.state == "340"
+    assert state.attributes["device_class"] == "power"
+    assert state.attributes["unit_of_measurement"] == "W"
+
+    # a second poll with 540 W: the mean of 340 and 540
+    freezer.tick(timedelta(minutes=5))
+    fake_piko.data_values = {"current_power": 540}
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "440"
+
+    # after more than 15 minutes only the newer sample counts
+    freezer.tick(timedelta(minutes=10, seconds=1))
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "540"
+
+
 @pytest.mark.parametrize(
     ("interval", "failures_until_unavailable"),
     [(10, 9), (30, 3), (90, 1), (600, 1)],

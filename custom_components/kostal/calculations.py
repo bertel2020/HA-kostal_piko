@@ -35,3 +35,10 @@ def windowed_efficiency(samples) -> float | None:
     if dc <= 0:
         return None
     return round(ac / dc * 100, 1)
+
+
+def mean_power(samples) -> int | None:
+    """Return the mean of several AC power samples in W, or None without samples."""
+    if not samples:
+        return None
+    return round(sum(samples) / len(samples))

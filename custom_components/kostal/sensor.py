@@ -98,6 +98,8 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         """Return the value of the sensor."""
         if self.type == "efficiency":  # averaged over several polls
             return self.coordinator.efficiency
+        if self.type == "average_power_15min":  # mean of the last polls
+            return self.coordinator.average_power
         source, getter = VALUE_GETTERS[self.type]
         obj = (self.coordinator.data or {}).get(source)
         if obj is None:

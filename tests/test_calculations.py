@@ -2,6 +2,7 @@
 from custom_components.kostal.calculations import (
     dc_power,
     string_power,
+    mean_power,
     windowed_efficiency,
 )
 
@@ -42,3 +43,12 @@ def test_windowed_efficiency_is_power_weighted():
 def test_windowed_efficiency_without_dc_is_unknown():
     assert windowed_efficiency([]) is None
     assert windowed_efficiency([(0, 0)]) is None
+
+
+def test_mean_power_is_rounded():
+    assert mean_power([100, 201]) == 150  # 150.5 rounds to the even value
+    assert mean_power([0, 0]) == 0
+
+
+def test_mean_power_without_samples_is_unknown():
+    assert mean_power([]) is None

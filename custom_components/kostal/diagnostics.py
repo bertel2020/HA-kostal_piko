@@ -48,5 +48,6 @@ async def async_get_config_entry_diagnostics(
                 for sensor_type, (source, getter) in VALUE_GETTERS.items()
             },
             "efficiency": coordinator.efficiency,
+            "average_power_15min": coordinator.average_power,
         },
     }

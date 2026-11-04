@@ -131,6 +131,9 @@
       },
       "efficiency": {
         "name": "Wirkungsgrad"
+      },
+      "average_power_15min": {
+        "name": "Leistung Schnitt 15 Minuten"
       }
     }
   }

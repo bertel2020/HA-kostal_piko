@@ -11,11 +11,12 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .calculations import dc_power, windowed_efficiency
+from .calculations import dc_power, mean_power, windowed_efficiency
 from .client import KostalAuthError, KostalClient, KostalError
 from .const import (
     DOMAIN,
     EFFICIENCY_WINDOW,
+    POWER_AVERAGE_WINDOW,
     UNAVAILABLE_AFTER,
 )
 
@@ -50,11 +51,18 @@ class KostalCoordinator(DataUpdateCoordinator):
         self._failure_limit = max(1, round(UNAVAILABLE_AFTER / update_interval))
         # (time, AC power, DC power) of the last EFFICIENCY_WINDOW
         self._samples: deque = deque()
+        # (time, AC power) of the last POWER_AVERAGE_WINDOW
+        self._power_samples: deque = deque()
 
     @property
     def efficiency(self) -> float | None:
         """Efficiency in percent, averaged over the last EFFICIENCY_WINDOW."""
         return windowed_efficiency([(ac, dc) for _, ac, dc in self._samples])
+
+    @property
+    def average_power(self) -> int | None:
+        """AC power in W, averaged over the last POWER_AVERAGE_WINDOW."""
+        return mean_power([ac for _, ac in self._power_samples])
 
     def _record_sample(self, data) -> None:
         now = dt_util.utcnow()
@@ -64,6 +72,15 @@ class KostalCoordinator(DataUpdateCoordinator):
             self._samples.append((now, ac, dc))
         while self._samples and self._samples[0][0] < now - EFFICIENCY_WINDOW:
             self._samples.popleft()
+        if ac is not None:
+            self._power_samples.append((now, ac))
+        # like the statistics helper with "keep last sample": the newest
+        # sample is never dropped
+        while (
+            len(self._power_samples) > 1
+            and self._power_samples[0][0] < now - POWER_AVERAGE_WINDOW
+        ):
+            self._power_samples.popleft()
 
     async def _async_fetch(self) -> dict:
         data = await self.client.async_get_data()

@@ -13,6 +13,7 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 - **Skript `scripts/check_inverter.py`** liest einen Wechselrichter mit dem Client aus und gibt alle Werte aus (Passwort wird abgefragt).
 
 **Neu (Fortsetzung)**
+- **Sensor „Average power 15 min“** (`sensor.kostal_piko_average_power_15_min`, optional): Mittelwert der AC-Leistung über die letzten 15 Minuten, ersetzt einen Statistik-Helfer auf `current_power`.
 - **Abfrageintervall einstellbar** (10 bis 600 Sekunden, Standard 30) über **Konfigurieren**. Die Zeit bis „nicht verfügbar“ bleibt bei etwa 90 Sekunden, unabhängig vom Intervall.
 
 **Geändert**

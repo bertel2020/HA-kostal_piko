@@ -22,6 +22,9 @@ MAX_SCAN_INTERVAL = 600
 # The efficiency is averaged over this period (power-weighted).
 EFFICIENCY_WINDOW = timedelta(minutes=5)
 
+# The average power is the mean of the polled AC power over this period.
+POWER_AVERAGE_WINDOW = timedelta(minutes=15)
+
 # Entities keep their last value for this long after the first failed poll
 # before they become unavailable (with the default interval: 3 polls).
 UNAVAILABLE_AFTER = timedelta(seconds=90)
@@ -55,6 +58,8 @@ SENSOR_TYPES = {
     "dc_power": ["DC power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
     # AC output power / DC input power (sum of string V * I)
     "efficiency": ["Efficiency", PERCENTAGE, "mdi:percent", "measurement", None],
+    # Mean of the AC power over the last POWER_AVERAGE_WINDOW
+    "average_power_15min": ["Average power 15 min", UnitOfPower.WATT, "mdi:chart-line", "measurement", "power"],
 }
 
 ISSUES_URL = "https://github.com/bertel2020/HA-kostal_piko/issues"

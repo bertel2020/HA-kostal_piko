@@ -111,6 +111,7 @@ The three calculated values do not come directly from the inverter but are deriv
 - **String N power** = voltage × current, rounded to whole watts. If the inverter has fewer than three strings the value is "unknown".
 - **DC power** = sum of the existing string powers.
 - **Efficiency** = AC power ÷ DC power × 100, rounded to one decimal, **averaged over the last 5 minutes**: the sum of the AC powers is divided by the sum of the DC powers, so periods with high power count more. A single reading is imprecise because the currents are rounded to 0.01 A and the AC and DC values are not measured at the same moment (the value of a single poll varies by several percent when the irradiation changes). Without DC input (standby) the value is "unknown" rather than 0 %, so averages are not skewed. It becomes unknown 5 minutes after the last value with DC input.
+- **Average power 15 min** = mean of the polled AC power over the last 15 minutes, rounded to whole watts. It matches a statistics helper (mean, 15 minutes) on `current_power` and can replace it. The latest value is kept even after a longer pause.
 
 ### Diagnostics
 

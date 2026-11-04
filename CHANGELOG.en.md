@@ -13,6 +13,7 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 - **Script `scripts/check_inverter.py`** reads an inverter with the client and prints all values (the password is asked for).
 
 **New (continued)**
+- **Sensor "Average power 15 min"** (`sensor.kostal_piko_average_power_15_min`, optional): mean of the AC power over the last 15 minutes, replaces a statistics helper on `current_power`.
 - **Adjustable update interval** (10 to 600 seconds, default 30) via **Configure**. The time until "unavailable" stays at about 90 seconds regardless of the interval.
 
 **Changed**
