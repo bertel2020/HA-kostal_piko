@@ -16,6 +16,7 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 - **Abfrageintervall einstellbar** (10 bis 600 Sekunden, Standard 30) über **Konfigurieren**. Die Zeit bis „nicht verfügbar“ bleibt bei etwa 90 Sekunden, unabhängig vom Intervall.
 
 **Geändert**
+- **Nicht unterstützte Wechselrichter** werden beim Einrichten klar gemeldet („Dieser Wechselrichter wird nicht unterstützt“, mit Hinweis auf ein Issue) statt „Verbindung fehlgeschlagen“. Dazu liest die Einrichtung auch die Messwert-Seite. Die Log-Meldung eines fehlgeschlagenen Updates behauptet nicht mehr, der Wechselrichter sei nicht erreichbar.
 - **Wirkungsgrad geglättet:** Er wird über die letzten 5 Minuten gemittelt (Summe AC ÷ Summe DC) statt aus einem einzelnen Abruf berechnet, der bei wechselnder Einstrahlung um mehrere Prozent schwankte.
 - Abhängigkeit `lxml` statt `kostalpiko`. Mindestversion Home Assistant **2025.8.0** (Options-Flow lädt die Integration selbst neu).
 - Eine unbekannte Seitenstruktur (andere Anzahl von Werten) wird als Fehler gemeldet statt still „unbekannt“ zu liefern.

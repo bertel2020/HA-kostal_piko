@@ -35,6 +35,14 @@ Dieses Projekt baut auf [rcasula/kostalpiko-homeassistant](https://github.com/rc
 - Home Assistant **2025.8.0** oder neuer.
 - Ein Kostal-Piko-Wechselrichter, dessen Weboberfläche im Netzwerk erreichbar ist (Standard-Zugang: Benutzer `pvserver`, Passwort `pvwr`).
 
+## Unterstützte Geräte
+
+Die Integration liest die ältere Weboberfläche der Piko-Wechselrichter („PV Webserver“ mit den Seiten `index.fhtml`, `BA.fhtml` und `Solar2.fhtml`). Getestet ist sie mit einem **PIKO 10.1** mit drei Strings. Als Beispielseiten sind in den Tests außerdem Geräte mit einem bis drei Strings und ein bis drei Phasen abgedeckt.
+
+**Nicht unterstützt** sind Geräte mit einer anderen Weboberfläche. In einer Meldung im ursprünglichen Repository zeigt ein **Piko 17** eine moderne Webanwendung statt dieser Seiten. Bei sehr alten Geräten (z. B. einem Piko 8.3 von 2008) ist unklar, ob sie dieselbe Struktur haben.
+
+Erkennt die Integration die Seiten eines Wechselrichters nicht, meldet die Einrichtung „Dieser Wechselrichter wird nicht unterstützt“. Eröffne dann ein [Issue](https://github.com/bertel2020/HA-kostal_piko/issues) und hänge die Seiten `index.fhtml` und `Solar2.fhtml` an (speichere sie im Browser und entferne vorher die Seriennummer). Mit dem Skript `scripts/check_inverter.py` lässt sich ein Wechselrichter außerdem ohne Home Assistant auslesen.
+
 ## Installation
 
 ### Über HACS (empfohlen)

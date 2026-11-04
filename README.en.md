@@ -35,6 +35,14 @@ This project builds on [rcasula/kostalpiko-homeassistant](https://github.com/rca
 - Home Assistant **2025.8.0** or newer.
 - A Kostal Piko inverter whose web interface is reachable on the network (default login: user `pvserver`, password `pvwr`).
 
+## Supported devices
+
+The integration reads the older web interface of the Piko inverters ("PV Webserver" with the pages `index.fhtml`, `BA.fhtml` and `Solar2.fhtml`). It is tested with a **PIKO 10.1** with three strings. The tests also cover sample pages of devices with one to three strings and one to three phases.
+
+**Not supported** are devices with a different web interface. In a report in the original repository a **Piko 17** shows a modern web application instead of these pages. For very old devices (e.g. a Piko 8.3 from 2008) it is unclear whether they have the same structure.
+
+If the integration does not recognise the pages of an inverter, the setup reports "This inverter is not supported". Please open an [issue](https://github.com/bertel2020/HA-kostal_piko/issues) and attach the pages `index.fhtml` and `Solar2.fhtml` (save them in the browser and remove the serial number first). The script `scripts/check_inverter.py` also reads an inverter without Home Assistant.
+
 ## Installation
 
 ### Via HACS (recommended)
