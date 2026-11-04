@@ -55,6 +55,8 @@ class FakeClient:
     fail = False  # simulate an unreachable inverter
     auth_fail = False  # simulate wrong credentials
     ba_fail = False  # simulate a failing BA request only
+    info_by_host: dict = {}  # several inverters: host -> PikoInfo
+    values_by_host: dict = {}  # several inverters: host -> values
 
     def __init__(self, session, host, username, password):
         self.host = host
@@ -71,11 +73,12 @@ class FakeClient:
         self._check()
         if FakeClient.info is None:
             raise KostalConnectionError("no response")
-        return FakeClient.info
+        return FakeClient.info_by_host.get(self.host, FakeClient.info)
 
     async def async_get_data(self):
         self._check()
-        return FakeData(**FakeClient.data_values)
+        values = {**FakeClient.data_values, **FakeClient.values_by_host.get(self.host, {})}
+        return FakeData(**values)
 
     async def async_get_ba_data(self):
         if FakeClient.ba_fail:
@@ -91,6 +94,8 @@ def fake_piko():
     FakeClient.fail = False
     FakeClient.auth_fail = False
     FakeClient.ba_fail = False
+    FakeClient.info_by_host = {}
+    FakeClient.values_by_host = {}
     with (
         patch("custom_components.kostal.KostalClient", FakeClient),
         patch("custom_components.kostal.config_flow.KostalClient", FakeClient),

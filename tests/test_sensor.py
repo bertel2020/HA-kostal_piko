@@ -304,3 +304,47 @@ async def test_unavailable_after_about_90_seconds_for_any_interval(
     await coordinator.async_refresh()
     await hass.async_block_till_done()
     assert hass.states.get(entity).state == "unavailable"
+
+
+async def test_two_inverters_keep_their_own_entities(hass, fake_piko):
+    """Regression for the upstream bug where a second inverter got mixed up."""
+    from custom_components.kostal.client import PikoInfo
+
+    fake_piko.info_by_host = {
+        "http://10.0.0.1": PikoInfo("SN-A", "PIKO 10.1"),
+        "http://10.0.0.2": PikoInfo("SN-B", "PIKO 5.5"),
+    }
+    fake_piko.values_by_host = {
+        "http://10.0.0.1": {"current_power": 340},
+        "http://10.0.0.2": {"current_power": 1200},
+    }
+    entries = []
+    for title, host in (("piko_a", "http://10.0.0.1"), ("piko_b", "http://10.0.0.2")):
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            title=title,
+            data={
+                "host": host,
+                "username": "pvserver",
+                "password": "pvwr",
+                "monitored_conditions": ["current_power"],
+            },
+        )
+        entry.add_to_hass(hass)
+        entries.append(entry)
+    # Home Assistant sets up all entries of the integration together
+    await hass.config_entries.async_setup(entries[0].entry_id)
+    await hass.async_block_till_done()
+    assert [entry.state for entry in entries] == [ConfigEntryState.LOADED] * 2
+
+    assert hass.states.get("sensor.piko_a_current_power").state == "340"
+    assert hass.states.get("sensor.piko_b_current_power").state == "1200"
+
+    registry = er.async_get(hass)
+    for entry, serial in zip(entries, ("SN-A", "SN-B"), strict=True):
+        entity = registry.async_get_entity_id("sensor", DOMAIN, f"{serial} Current power")
+        assert registry.async_get(entity).config_entry_id == entry.entry_id
+    device_registry = dr.async_get(hass)
+    for entry in entries:
+        devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+        assert len(devices) == 1
