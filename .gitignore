@@ -19,3 +19,4 @@ Temporary Items
 __pycache__/
 *.pyc
 .coverage
+*.whl
