@@ -60,6 +60,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
     if not info or len(info) < 2:
         raise ConfigEntryNotReady("Kostal inverter not reachable")
 
+    # Entries created by older versions have no unique_id. Add it, so the
+    # config flow can detect duplicates. Entities are not affected.
+    if entry.unique_id is None:
+        hass.config_entries.async_update_entry(entry, unique_id=info[0])
+
     coordinator = KostalCoordinator(hass, entry, piko)
     await coordinator.async_config_entry_first_refresh()
 

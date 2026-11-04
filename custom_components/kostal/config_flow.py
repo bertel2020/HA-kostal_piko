@@ -96,6 +96,10 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if info is None:
                     self._errors[CONF_HOST] = "could_not_connect"
                 else:
+                    # The serial number identifies the inverter, regardless of
+                    # how the host URL is spelled.
+                    await self.async_set_unique_id(info[0])
+                    self._abort_if_unique_id_configured()
                     return self.async_create_entry(
                         title=name,
                         data={
