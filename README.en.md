@@ -73,7 +73,7 @@ Settings → Devices & Services → Add Integration → **Kostal Piko**.
 2. **Host**: address of the inverter **including** the protocol, e.g. `http://192.168.1.50`.
 3. **Username / password**: login of the web interface (default `pvserver` / `pvwr`).
 
-The next step is the choice of **sensors**. Everything your inverter provides is preselected (for example only the strings and phases that exist). The own-consumption (BA) sensors are only preselected if the inverter reports values for them. Deselect what you do not want.
+The next step is the choice of **sensors**. Everything your inverter provides is preselected (for example only the strings and phases that exist). The own-consumption (BA) sensors are only preselected if the inverter reports values for them. The sensors are grouped (power and energy, solar generator, grid, own consumption). Deselect what you do not want.
 
 The connection (including the credentials) is checked when saving. If the inverter is unreachable or the credentials are wrong, an error is shown. The same inverter cannot be added twice; its serial number is used as identifier.
 

@@ -15,11 +15,14 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -58,16 +61,75 @@ class Detected:
     sensors: list[str]
 
 
-def sensor_selector() -> SelectSelector:
-    """Selection of the sensors, with translated labels."""
-    return SelectSelector(
-        SelectSelectorConfig(
-            options=SUPPORTED_SENSOR_TYPES,
-            multiple=True,
-            mode=SelectSelectorMode.LIST,
-            translation_key="sensors",
-        )
+# The sensors in the order and groups of the selection form. Every group is a
+# section of the form, the stored value is still one flat list.
+SENSOR_GROUPS: dict[str, list[str]] = {
+    "power": [
+        "current_power", "daily_energy", "total_energy",
+        "average_power_15min", "efficiency", "status",
+    ],
+    "dc": [
+        "dc_power",
+        "string1_power", "string1_voltage", "string1_current",
+        "string2_power", "string2_voltage", "string2_current",
+        "string3_power", "string3_voltage", "string3_current",
+    ],
+    "ac": [
+        "l1_voltage", "l1_power", "l2_voltage", "l2_power", "l3_voltage", "l3_power",
+    ],
+    "ba": [
+        "solar_generator_power",
+        "consumption_phase_1", "consumption_phase_2", "consumption_phase_3",
+    ],
+}  # fmt: skip
+
+
+async def sensor_schema(hass: HomeAssistant, selected) -> dict:
+    """Return the schema fields for the sensor selection (one section per group).
+
+    The labels are looked up here instead of by the frontend, so they are also
+    shown when the browser has cached the translations of an older version.
+    """
+    labels = await async_get_translations(
+        hass, hass.config.language, "entity", [DOMAIN]
     )
+    fields = {}
+    for group, names in SENSOR_GROUPS.items():
+        options = [
+            SelectOptionDict(
+                value=name,
+                label=labels.get(
+                    f"component.{DOMAIN}.entity.sensor.{name}.name",
+                    SENSOR_TYPES[name][0],
+                ),
+            )
+            for name in names
+        ]
+        selector = SelectSelector(
+            SelectSelectorConfig(
+                options=options, multiple=True, mode=SelectSelectorMode.LIST
+            )
+        )
+        fields[vol.Required(group)] = section(
+            vol.Schema(
+                {
+                    vol.Required(
+                        CONF_MONITORED_CONDITIONS,
+                        default=[name for name in names if name in selected],
+                    ): selector
+                }
+            ),
+            {"collapsed": False},
+        )
+    return fields
+
+
+def flatten_sensors(user_input: dict) -> list[str]:
+    """Return the selected sensors of all sections as one list."""
+    selected: list[str] = []
+    for group in SENSOR_GROUPS:
+        selected.extend(user_input.get(group, {}).get(CONF_MONITORED_CONDITIONS, []))
+    return selected
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -199,17 +261,11 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title=self._name,
                 data={
                     **self._connection,
-                    CONF_MONITORED_CONDITIONS: user_input[CONF_MONITORED_CONDITIONS],
+                    CONF_MONITORED_CONDITIONS: flatten_sensors(user_input),
                 },
             )
 
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_MONITORED_CONDITIONS, default=self._sensors
-                ): sensor_selector()
-            }
-        )
+        schema = vol.Schema(await sensor_schema(self.hass, self._sensors))
         return self.async_show_form(step_id="sensors", data_schema=schema)
 
     async def async_step_reconfigure(self, user_input=None):
@@ -297,8 +353,12 @@ class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
     async def async_step_init(self, user_input=None):
         """Manage the monitored sensors."""
         if user_input is not None:
-            user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
-            return self.async_create_entry(data=user_input)
+            return self.async_create_entry(
+                data={
+                    CONF_MONITORED_CONDITIONS: flatten_sensors(user_input),
+                    CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
+                }
+            )
 
         current = self.config_entry.options.get(
             CONF_MONITORED_CONDITIONS,
@@ -310,9 +370,7 @@ class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
         )
         schema = vol.Schema(
             {
-                vol.Required(
-                    CONF_MONITORED_CONDITIONS, default=list(current)
-                ): sensor_selector(),
+                **await sensor_schema(self.hass, current),
                 vol.Required(
                     CONF_SCAN_INTERVAL, default=interval
                 ): NumberSelector(

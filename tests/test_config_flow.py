@@ -3,7 +3,8 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.kostal.const import DOMAIN
+from custom_components.kostal.config_flow import SENSOR_GROUPS
+from custom_components.kostal.const import DOMAIN, SENSOR_TYPES
 
 USER_INPUT = {
     "name": "Kostal Piko",
@@ -26,6 +27,24 @@ DETECTED = [
 ]  # fmt: skip
 
 
+def _nested(names):
+    """Sensor names as the input of the sectioned form."""
+    return {
+        group: {"monitored_conditions": [n for n in members if n in names]}
+        for group, members in SENSOR_GROUPS.items()
+    }
+
+
+def _flat(defaults):
+    """The preselection of the sectioned form as one list."""
+    return [n for group in SENSOR_GROUPS for n in defaults[group]["monitored_conditions"]]
+
+
+def test_all_sensors_are_in_exactly_one_group():
+    grouped = [n for names in SENSOR_GROUPS.values() for n in names]
+    assert sorted(grouped) == sorted(SENSOR_TYPES)
+
+
 async def _start(hass):
     return await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -43,7 +62,7 @@ async def test_user_flow_creates_entry(hass, fake_piko):
     assert result["step_id"] == "sensors"
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"monitored_conditions": ["current_power", "efficiency"]}
+        result["flow_id"], _nested(["current_power", "efficiency"])
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "kostal_piko"
@@ -58,7 +77,7 @@ async def test_sensors_are_preselected_from_the_inverter(hass, fake_piko):
         result["flow_id"], CONNECTION
     )
     # the defaults of the form are the preselection
-    assert result["data_schema"]({})["monitored_conditions"] == DETECTED
+    assert set(_flat(result["data_schema"]({group: {} for group in SENSOR_GROUPS}))) == set(DETECTED)
 
 
 async def test_ba_sensors_are_preselected_with_ba_values(hass, fake_piko):
@@ -72,7 +91,7 @@ async def test_ba_sensors_are_preselected_with_ba_values(hass, fake_piko):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], CONNECTION
     )
-    selected = result["data_schema"]({})["monitored_conditions"]
+    selected = _flat(result["data_schema"]({group: {} for group in SENSOR_GROUPS}))
     assert set(selected) == set(DETECTED) | {
         "solar_generator_power",
         "consumption_phase_1",
@@ -88,7 +107,7 @@ async def test_failing_ba_page_does_not_break_setup(hass, fake_piko):
         result["flow_id"], CONNECTION
     )
     assert result["step_id"] == "sensors"
-    assert result["data_schema"]({})["monitored_conditions"] == DETECTED
+    assert set(_flat(result["data_schema"]({group: {} for group in SENSOR_GROUPS}))) == set(DETECTED)
 
 
 async def test_sensors_follow_the_page_layout(hass, fake_piko):
@@ -98,7 +117,7 @@ async def test_sensors_follow_the_page_layout(hass, fake_piko):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], CONNECTION
     )
-    selected = result["data_schema"]({})["monitored_conditions"]
+    selected = _flat(result["data_schema"]({group: {} for group in SENSOR_GROUPS}))
     assert "string2_power" in selected
     assert "string3_voltage" not in selected
     assert "string3_power" not in selected
@@ -151,7 +170,7 @@ async def test_options_flow_changes_sensors(hass, fake_piko):
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {"monitored_conditions": ["current_power", "dc_power"]},
+        {**_nested(["current_power", "dc_power"]), "scan_interval": 30},
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["monitored_conditions"] == ["current_power", "dc_power"]
@@ -281,7 +300,7 @@ async def test_options_flow_sets_the_update_interval(hass, fake_piko):
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {"monitored_conditions": ["current_power"], "scan_interval": 60.0},
+        {**_nested(["current_power"]), "scan_interval": 60.0},
     )
     await hass.async_block_till_done()
 
@@ -300,3 +319,18 @@ async def test_unknown_page_layout_shows_unsupported_device(hass, fake_piko):
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "unsupported_device"}
+
+
+async def test_sensor_labels_are_translated_by_the_flow(hass, fake_piko):
+    hass.config.language = "de"
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CONNECTION
+    )
+    options = {}
+    for marker, field in result["data_schema"].schema.items():
+        for inner in field.schema.schema.values():
+            options.update({o["value"]: o["label"] for o in inner.config["options"]})
+    assert options["current_power"] == "Aktuelle Leistung"
+    assert options["string1_power"] == "String 1 Leistung"
+    assert options["efficiency"] == "Wirkungsgrad"

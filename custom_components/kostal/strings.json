@@ -20,11 +20,31 @@
       "sensors": {
         "title": "Sensors",
         "description": "Choose the sensors to create. The preselection contains everything this inverter provides, the own-consumption (BA) sensors only if the inverter reports values for them. You can change the selection later via Configure.",
-        "data": {
-          "monitored_conditions": "Sensors"
-        },
-        "data_description": {
-          "monitored_conditions": "Sensors that are not selected are not created. Entities that already exist are not affected."
+        "sections": {
+          "power": {
+            "name": "Power and energy",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          },
+          "dc": {
+            "name": "Solar generator (DC, strings)",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          },
+          "ac": {
+            "name": "Grid (AC, per phase)",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          },
+          "ba": {
+            "name": "Own consumption (BA sensor)",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          }
         }
       },
       "reconfigure": {
@@ -64,8 +84,33 @@
         "title": "Kostal Piko",
         "description": "Choose the sensors that are created and how often the inverter is read. The inverter needs about 1 s per page, so values below 10 s make no sense.",
         "data": {
-          "monitored_conditions": "Sensors",
           "scan_interval": "Update interval (seconds)"
+        },
+        "sections": {
+          "power": {
+            "name": "Power and energy",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          },
+          "dc": {
+            "name": "Solar generator (DC, strings)",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          },
+          "ac": {
+            "name": "Grid (AC, per phase)",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          },
+          "ba": {
+            "name": "Own consumption (BA sensor)",
+            "data": {
+              "monitored_conditions": "Sensors"
+            }
+          }
         }
       }
     }
@@ -149,38 +194,6 @@
       },
       "average_power_15min": {
         "name": "Average power 15 min"
-      }
-    }
-  },
-  "selector": {
-    "sensors": {
-      "options": {
-        "solar_generator_power": "Solar generator power",
-        "consumption_phase_1": "Consumption phase 1",
-        "consumption_phase_2": "Consumption phase 2",
-        "consumption_phase_3": "Consumption phase 3",
-        "current_power": "Current power",
-        "total_energy": "Total energy",
-        "daily_energy": "Daily energy",
-        "string1_voltage": "String 1 voltage",
-        "string1_current": "String 1 current",
-        "string2_voltage": "String 2 voltage",
-        "string2_current": "String 2 current",
-        "string3_voltage": "String 3 voltage",
-        "string3_current": "String 3 current",
-        "l1_voltage": "L1 voltage",
-        "l1_power": "L1 power",
-        "l2_voltage": "L2 voltage",
-        "l2_power": "L2 power",
-        "l3_voltage": "L3 voltage",
-        "l3_power": "L3 power",
-        "status": "Status",
-        "string1_power": "String 1 power",
-        "string2_power": "String 2 power",
-        "string3_power": "String 3 power",
-        "dc_power": "DC power",
-        "efficiency": "Efficiency",
-        "average_power_15min": "Average power 15 min"
       }
     }
   }
