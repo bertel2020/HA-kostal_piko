@@ -118,15 +118,6 @@ The former setup via a `kostal:` block in `configuration.yaml` is no longer supp
 
 See [CHANGELOG.en.md](CHANGELOG.en.md).
 
-## Tests
-
-```bash
-pip install -r requirements.test.txt
-pytest
-```
-
-The tests run with `pytest-homeassistant-custom-component` against a real Home Assistant instance and a simulated inverter (no network).
-
 ## Acknowledgements
 
 A heartfelt **thank you to [@rcasula](https://github.com/rcasula)**, the author of the original integration [kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Without their work this project would not exist – it is based on their code and their idea of bringing Kostal Piko inverters into Home Assistant.

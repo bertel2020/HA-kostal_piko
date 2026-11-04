@@ -118,15 +118,6 @@ Die frühere Einrichtung über einen `kostal:`-Block in der `configuration.yaml`
 
 Siehe [CHANGELOG.md](CHANGELOG.md).
 
-## Tests
-
-```bash
-pip install -r requirements.test.txt
-pytest
-```
-
-Die Tests laufen mit `pytest-homeassistant-custom-component` gegen eine echte Home-Assistant-Instanz und einen simulierten Wechselrichter (kein Netzwerk).
-
 ## Danksagung
 
 Ein herzliches **Dankeschön an [@rcasula](https://github.com/rcasula)**, den Autor der ursprünglichen Integration [kostalpiko-homeassistant](https://github.com/rcasula/kostalpiko-homeassistant). Ohne seine Arbeit gäbe es dieses Projekt nicht – es basiert auf seinem Code und seiner Idee, Kostal-Piko-Wechselrichter in Home Assistant zu bringen.
