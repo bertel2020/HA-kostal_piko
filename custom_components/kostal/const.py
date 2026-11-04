@@ -37,6 +37,8 @@ SENSOR_TYPES = {
     "l3_voltage": ["L3 voltage",  UnitOfElectricPotential.VOLT, "mdi:current-ac", "measurement", "voltage"],
     "l3_power": ["L3 power", UnitOfPower.WATT, "mdi:power-plug", "measurement", "power"],
     "status": ["Status", None, "mdi:solar-power", None, None],
-    # Calculated: AC output power / DC input power (sum of string V * I)
+    # Calculated sensors
+    "dc_power": ["DC power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
+    # AC output power / DC input power (sum of string V * I)
     "efficiency": ["Efficiency", PERCENTAGE, "mdi:percent", "measurement", None],
 }

@@ -18,21 +18,30 @@ from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-def _efficiency(data):
-    """Return the inverter efficiency in percent.
+def _dc_power(data):
+    """Return the DC input power in W: sum of voltage * current of all strings.
 
-    AC output power divided by the DC input power. The DC power is the sum
-    of voltage * current of all strings that exist on this inverter.
-    Returns None while there is no DC input (night), instead of a bogus 0 %.
+    Returns None if the inverter reports no string values at all.
     """
-    ac = data.get_current_power()
-    dc = 0.0
+    total = 0.0
+    found = False
     for string in (1, 2, 3):
         voltage = getattr(data, f"get_string{string}_voltage")()
         current = getattr(data, f"get_string{string}_current")()
         if voltage is not None and current is not None:
-            dc += voltage * current
-    if ac is None or dc <= 0:
+            total += voltage * current
+            found = True
+    return round(total) if found else None
+
+
+def _efficiency(data):
+    """Return the inverter efficiency in percent (AC power / DC power).
+
+    Returns None while there is no DC input (night), instead of a bogus 0 %.
+    """
+    ac = data.get_current_power()
+    dc = _dc_power(data)
+    if ac is None or not dc or dc <= 0:
         return None
     return round(ac / dc * 100, 1)
 
@@ -59,6 +68,7 @@ VALUE_GETTERS = {
     "consumption_phase_1": ("ba_data", "get_consumption_phase_1"),
     "consumption_phase_2": ("ba_data", "get_consumption_phase_2"),
     "consumption_phase_3": ("ba_data", "get_consumption_phase_3"),
+    "dc_power": ("data", _dc_power),
     "efficiency": ("data", _efficiency),
 }
 
