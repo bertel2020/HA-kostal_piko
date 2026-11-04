@@ -4,20 +4,30 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
     CONF_MONITORED_CONDITIONS,
+    CONF_NAME,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import KostalAuthError, KostalClient, KostalError
-from .configuration_schema import CONFIG_SCHEMA_ROOT
+from .const import (
+    DEFAULT_NAME,
+    DEFAULT_SCAN_INTERVAL,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    SENSOR_TYPES,
+)
 from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,6 +35,23 @@ _LOGGER = logging.getLogger(__name__)
 __version__ = "2.2.0"
 
 PLATFORMS = ["sensor"]
+
+# Validates data and options of a config entry (older entries may still
+# carry a name).
+ENTRY_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string,
+        vol.Required(CONF_HOST): cv.string,
+        vol.Required(CONF_MONITORED_CONDITIONS): vol.All(
+            cv.ensure_list, [vol.In(list(SENSOR_TYPES))]
+        ),
+        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
+            vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)
+        ),
+    }
+)
 
 
 @dataclass
@@ -47,7 +74,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
     data = dict(entry.data)
     data.update(entry.options)
 
-    conf = CONFIG_SCHEMA_ROOT(data)
+    conf = ENTRY_SCHEMA(data)
 
     client = KostalClient(
         async_get_clientsession(hass),
