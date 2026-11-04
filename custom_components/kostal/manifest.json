@@ -2,8 +2,11 @@
   "codeowners": ["@bertel2020"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/bertel2020/kostalpiko-homeassistant",
+  "documentation": "https://github.com/bertel2020/HA-kostal_piko",
   "domain": "kostal",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/bertel2020/HA-kostal_piko/issues",
   "name": "Kostal Piko",
   "requirements": ["kostalpiko>=0.6"],
   "version": "2.1.0"
