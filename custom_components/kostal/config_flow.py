@@ -5,7 +5,7 @@ import voluptuous as vol
 
 from kostalpiko.kostalpiko import Piko
 
-from requests.exceptions import HTTPError, ConnectTimeout
+from requests.exceptions import RequestException
 
 from homeassistant import config_entries, exceptions
 import homeassistant.helpers.config_validation as cv
@@ -36,9 +36,12 @@ _LOGGER = logging.getLogger(__name__)
 @callback
 def kostal_entries(hass: HomeAssistant):
     """Return the hosts for the domain."""
-    return set(
-        (entry.data[CONF_HOST]) for entry in hass.config_entries.async_entries(DOMAIN)
-    )
+    hosts = set()
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        host = entry.data.get(CONF_HOST) or entry.options.get(CONF_HOST)
+        if host:
+            hosts.add(host)
+    return hosts
 
 class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Kostal piko."""
@@ -62,7 +65,11 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         piko = Piko(host, username, password)
         try:
             response = piko._get_info()
-        except (ConnectTimeout, HTTPError):
+        except RequestException:
+            self._errors[CONF_HOST] = "could_not_connect"
+            return False
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("Unexpected error while connecting to Kostal inverter")
             self._errors[CONF_HOST] = "could_not_connect"
             return False
 
@@ -70,7 +77,7 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
-        errors = {}
+        self._errors = {}
 
         if user_input is not None:
 

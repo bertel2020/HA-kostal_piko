@@ -43,10 +43,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         #     PikoSensor(piko, type, entry.title)
         # ])
 
-    async_dispatcher_connect(
-        hass,
-        "kostal_init_sensors",
-        async_add_sensors
+    entry.async_on_unload(
+        async_dispatcher_connect(
+            hass,
+            f"kostal_init_sensors_{entry.entry_id}",
+            async_add_sensors,
+        )
     )
 
 
@@ -159,12 +161,12 @@ class PikoSensor(SensorEntity):
                 self._state = data.get_piko_status()
         if ba_data is not None:
             if self.type == "solar_generator_power":
-                self._state = ba_data.get_solar_generator_power() or "No BA sensor installed"
+                self._state = ba_data.get_solar_generator_power()
             elif self.type == "consumption_phase_1":
-                self._state = ba_data.get_consumption_phase_1() or "No BA sensor installed"
+                self._state = ba_data.get_consumption_phase_1()
             elif self.type == "consumption_phase_2":
-                self._state = ba_data.get_consumption_phase_2() or "No BA sensor installed"
+                self._state = ba_data.get_consumption_phase_2()
             elif self.type == "consumption_phase_3":
-                self._state = ba_data.get_consumption_phase_3() or "No BA sensor installed"
+                self._state = ba_data.get_consumption_phase_3()
 
         _LOGGER.debug("END - Type: {} - {}".format(self.type, self._state))

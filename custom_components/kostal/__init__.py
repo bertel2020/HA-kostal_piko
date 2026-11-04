@@ -71,10 +71,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
-    instance = hass.data[DOMAIN][entry.entry_id]
-    await instance.stop()
-    await instance.clean()
-    return True
+    instance = hass.data[DOMAIN].get(entry.entry_id)
+    if instance is None:
+        return True
+
+    unload_ok = True
+    if instance.platforms_loaded:
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
+    if unload_ok:
+        await instance.stop()
+        await instance.clean()
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+    return unload_ok
 
 
 class KostalInstance():
@@ -89,26 +97,37 @@ class KostalInstance():
             conf[CONF_HOST], conf[CONF_USERNAME], conf[CONF_PASSWORD]
         )
 
-        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self.stop)
+        self.platforms_loaded = False
 
-        hass.loop.create_task(
-            self.start_up()
+        entry.async_on_unload(
+            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self.stop)
         )
 
+        self._startup_task = entry.async_create_background_task(
+            hass, self.start_up(), f"kostal start_up {self.entry_id}"
+        )
+
+    @property
+    def signal_init_sensors(self) -> str:
+        """Dispatcher signal, unique per config entry."""
+        return f"kostal_init_sensors_{self.entry_id}"
+
     async def start_up(self):
-        await self.hass.async_add_executor_job(self.piko.update)
-        self.add_sensors(self.conf[CONF_MONITORED_CONDITIONS], self.piko)
+        try:
+            await self.hass.async_add_executor_job(self.piko.update)
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("Initial update of Kostal inverter failed")
+            return
+        await self._asyncadd_sensors(self.conf[CONF_MONITORED_CONDITIONS], self.piko)
 
     async def stop(self, _=None):
         """Stop Kostal."""
         _LOGGER.info("Shutting down Kostal")
 
-    def add_sensors(self, sensors, piko: PikoHolder):
-        self.hass.add_job(self._asyncadd_sensors(sensors, piko))
-
     async def _asyncadd_sensors(self, sensors, piko: PikoHolder):
         await self.hass.config_entries.async_forward_entry_setups(self.config_entry, ["sensor"])
-        async_dispatcher_send(self.hass, "kostal_init_sensors", sensors, piko)
+        self.platforms_loaded = True
+        async_dispatcher_send(self.hass, self.signal_init_sensors, sensors, piko)
 
     async def clean(self):
         pass
