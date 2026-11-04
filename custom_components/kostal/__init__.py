@@ -52,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
 
     # The serial number is part of the unique_id of every entity, so it has
     # to be known before any sensor is created. If the inverter is not
-    # reachable (e.g. at night) Home Assistant retries automatically.
+    # reachable Home Assistant retries automatically.
     try:
         info = await hass.async_add_executor_job(piko._get_info)
     except Exception as err:  # noqa: BLE001

@@ -121,3 +121,77 @@ async def test_unload_and_reload(hass, fake_piko):
     assert hass.states.get("sensor.kostal_piko_current_power").state == "340"
     # reloading must not create duplicates
     assert hass.states.get("sensor.kostal_piko_current_power_2") is None
+
+
+async def _setup(hass):
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_outage_makes_entities_unavailable_after_three_failures(
+    hass, fake_piko, caplog
+):
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data.coordinator
+    entity = "sensor.kostal_piko_current_power"
+    assert hass.states.get(entity).state == "340"
+
+    fake_piko.fail = True
+    for _ in range(2):  # one or two missed polls keep the last value
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(entity).state == "340"
+
+    await coordinator.async_refresh()  # third failure in a row
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "unavailable"
+    assert hass.states.get("sensor.kostal_piko_efficiency").state == "unavailable"
+    assert caplog.text.count("Error fetching kostal data") == 1
+
+    await coordinator.async_refresh()  # further failures are not logged again
+    assert caplog.text.count("Error fetching kostal data") == 1
+
+    fake_piko.fail = False
+    fake_piko.data_values = {"current_power": 400}
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "400"
+    assert "Fetching kostal data recovered" in caplog.text
+
+
+async def test_single_failure_resets_the_counter(hass, fake_piko):
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data.coordinator
+    entity = "sensor.kostal_piko_current_power"
+
+    for _ in range(5):  # failures that are never three in a row
+        fake_piko.fail = True
+        await coordinator.async_refresh()
+        await coordinator.async_refresh()
+        fake_piko.fail = False
+        await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "340"
+
+
+async def test_ba_failure_does_not_affect_inverter_values(hass, fake_piko):
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data.coordinator
+
+    fake_piko.ba_fail = True
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.kostal_piko_current_power").state == "340"
+
+
+async def test_unreachable_inverter_at_first_poll_is_retried(hass, fake_piko):
+    fake_piko.fail = True  # info is readable, but the data page is not
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY

@@ -48,18 +48,23 @@ class FakePiko:
 
     info = ["SN123", "PIKO 10"]
     data_values: dict = {}
+    fail = False  # simulate an unreachable inverter
+    ba_fail = False  # simulate a failing BA request only
 
     def __init__(self, host=None, username="pvserver", password="pvwr"):
         self.host = host
-        self.data = None
-        self.ba_data = None
 
     def _get_info(self):
         return FakePiko.info
 
-    def update(self):
-        self.data = FakeData(**FakePiko.data_values)
-        self.ba_data = FakePikoBAData()
+    def _get_raw_content(self):
+        # like the real library: None on connection errors and timeouts
+        return None if FakePiko.fail else ["raw"]
+
+    def _get_content_of_own_consumption(self):
+        if FakePiko.ba_fail:
+            raise ConnectionError("BA failed")
+        return []
 
 
 @pytest.fixture
@@ -67,8 +72,18 @@ def fake_piko():
     """Patch the Piko client everywhere it is used."""
     FakePiko.info = ["SN123", "PIKO 10"]
     FakePiko.data_values = {}
+    FakePiko.fail = False
+    FakePiko.ba_fail = False
     with (
         patch("custom_components.kostal.Piko", FakePiko),
         patch("custom_components.kostal.config_flow.Piko", FakePiko),
+        patch(
+            "custom_components.kostal.coordinator.PikoData",
+            lambda raw: FakeData(**FakePiko.data_values),
+        ),
+        patch(
+            "custom_components.kostal.coordinator.PikoBAData",
+            lambda raw: FakePikoBAData(),
+        ),
     ):
         yield FakePiko

@@ -15,6 +15,10 @@ DEFAULT_NAME = "Kostal Piko"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
+# Entities keep their last value for this many failed polls in a row
+# (about 1.5 minutes) before they become unavailable.
+FAILURES_BEFORE_UNAVAILABLE = 3
+
 
 SENSOR_TYPES = {
     "solar_generator_power": ["Solar generator power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],
