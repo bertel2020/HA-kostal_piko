@@ -34,6 +34,7 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    ISSUES_URL,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
     SENSOR_TYPES,
@@ -165,7 +166,10 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         return self.async_show_form(
-            step_id="user", data_schema=setup_schema, errors=self._errors
+            step_id="user",
+            data_schema=setup_schema,
+            errors=self._errors,
+            description_placeholders={"issues_url": ISSUES_URL},
         )
 
     async def async_step_reconfigure(self, user_input=None):
@@ -198,7 +202,10 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
         )
         return self.async_show_form(
-            step_id="reconfigure", data_schema=schema, errors=errors
+            step_id="reconfigure",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"issues_url": ISSUES_URL},
         )
 
     async def async_step_reauth(self, entry_data):
@@ -237,7 +244,10 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=schema,
             errors=errors,
-            description_placeholders={"host": entry.data[CONF_HOST]},
+            description_placeholders={
+                "host": entry.data[CONF_HOST],
+                "issues_url": ISSUES_URL,
+            },
         )
 
 

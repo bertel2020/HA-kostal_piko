@@ -56,3 +56,5 @@ SENSOR_TYPES = {
     # AC output power / DC input power (sum of string V * I)
     "efficiency": ["Efficiency", PERCENTAGE, "mdi:percent", "measurement", None],
 }
+
+ISSUES_URL = "https://github.com/bertel2020/HA-kostal_piko/issues"
