@@ -12,6 +12,9 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 - **Falsches Passwort wird erkannt** (HTTP 401): Beim Einrichten erscheint „Benutzername oder Passwort ist falsch“, im Betrieb startet Home Assistant eine **erneute Anmeldung** (Reauth) statt endlos Fehler zu loggen.
 - **Skript `scripts/check_inverter.py`** liest einen Wechselrichter mit dem Client aus und gibt alle Werte aus (Passwort wird abgefragt).
 
+**Neu (Fortsetzung)**
+- **Abfrageintervall einstellbar** (10 bis 600 Sekunden, Standard 30) über **Konfigurieren**. Die Zeit bis „nicht verfügbar“ bleibt bei etwa 90 Sekunden, unabhängig vom Intervall.
+
 **Geändert**
 - **Wirkungsgrad geglättet:** Er wird über die letzten 5 Minuten gemittelt (Summe AC ÷ Summe DC) statt aus einem einzelnen Abruf berechnet, der bei wechselnder Einstrahlung um mehrere Prozent schwankte.
 - Abhängigkeit `lxml` statt `kostalpiko`. Mindestversion Home Assistant **2025.8.0** (Options-Flow lädt die Integration selbst neu).

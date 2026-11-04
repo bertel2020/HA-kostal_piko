@@ -13,14 +13,18 @@ DOMAIN = "kostal"
 
 DEFAULT_NAME = "Kostal Piko"
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
+# Polling interval of the inverter in seconds (adjustable in the options).
+# The inverter needs about 1 s per page, so shorter than 10 s makes no sense.
+DEFAULT_SCAN_INTERVAL = 30
+MIN_SCAN_INTERVAL = 10
+MAX_SCAN_INTERVAL = 600
 
 # The efficiency is averaged over this period (power-weighted).
 EFFICIENCY_WINDOW = timedelta(minutes=5)
 
-# Entities keep their last value for this many failed polls in a row
-# (about 1.5 minutes) before they become unavailable.
-FAILURES_BEFORE_UNAVAILABLE = 3
+# Entities keep their last value for this long after the first failed poll
+# before they become unavailable (with the default interval: 3 polls).
+UNAVAILABLE_AFTER = timedelta(seconds=90)
 
 
 SENSOR_TYPES = {

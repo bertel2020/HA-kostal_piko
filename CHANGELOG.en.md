@@ -12,6 +12,9 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 - **Wrong passwords are detected** (HTTP 401): setup shows "Invalid username or password", during operation Home Assistant starts a **re-authentication** instead of logging errors forever.
 - **Script `scripts/check_inverter.py`** reads an inverter with the client and prints all values (the password is asked for).
 
+**New (continued)**
+- **Adjustable update interval** (10 to 600 seconds, default 30) via **Configure**. The time until "unavailable" stays at about 90 seconds regardless of the interval.
+
 **Changed**
 - **Efficiency smoothed:** It is averaged over the last 5 minutes (sum AC ÷ sum DC) instead of being calculated from a single poll, which varied by several percent when the irradiation changed.
 - Dependency `lxml` instead of `kostalpiko`. Minimum Home Assistant **2025.8.0** (the options flow reloads the integration itself).

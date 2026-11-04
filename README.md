@@ -68,7 +68,7 @@ Einstellungen → Geräte & Dienste → Integration hinzufügen → **Kostal Pik
 
 Beim Speichern wird die Verbindung geprüft (inklusive Zugangsdaten). Ist der Wechselrichter nicht erreichbar oder sind die Zugangsdaten falsch, erscheint ein Fehler. Derselbe Wechselrichter kann nicht doppelt angelegt werden; als Kennung dient seine Seriennummer.
 
-Die Auswahl der Sensoren lässt sich später über den **Konfigurieren**-Button der Integration ändern. Die Integration lädt sich dann neu; vorhandene Sensoren behalten ihre Entity-IDs.
+Die Auswahl der Sensoren und das **Abfrageintervall** (10 bis 600 Sekunden, Standard 30) lassen sich später über den **Konfigurieren**-Button der Integration ändern. Die Integration lädt sich dann neu; vorhandene Sensoren behalten ihre Entity-IDs. Der Wechselrichter braucht etwa 1 Sekunde pro Seite und ist kein schneller Server; Werte unter 10 Sekunden sind nicht sinnvoll.
 
 Host, Benutzername und Passwort lassen sich über ⋮ → **Neu konfigurieren** ändern, ohne die Integration zu löschen. Gehört die neue Adresse zu einem anderen Wechselrichter (andere Seriennummer), wird die Änderung abgelehnt. Entitäten und Verlauf bleiben erhalten.
 
@@ -110,7 +110,7 @@ Unter Einstellungen → Geräte & Dienste → Kostal Piko → ⋮ → **Diagnose
 
 ### Verhalten bei Ausfall
 
-Alle Sensoren werden von einem gemeinsamen Coordinator alle 30 Sekunden aktualisiert (ein Abruf pro Intervall, nicht je Sensor). Antwortet der Wechselrichter einmal oder zweimal nicht, behalten die Sensoren ihren letzten Wert. Schlagen **drei Abrufe in Folge** fehl (etwa 1,5 Minuten), werden alle Sensoren **„nicht verfügbar“** und im Log erscheint einmal eine Fehlermeldung. Sobald der Wechselrichter wieder antwortet, werden die Sensoren wieder verfügbar und die Wiederherstellung wird einmal geloggt. So zeigt kein Sensor veraltete Werte als aktuell an. Ein Ausfall des optionalen BA-Sensors macht die übrigen Werte nicht nicht verfügbar.
+Alle Sensoren werden von einem gemeinsamen Coordinator im eingestellten Intervall (Standard 30 Sekunden) aktualisiert (ein Abruf pro Intervall, nicht je Sensor). Antwortet der Wechselrichter einmal oder zweimal nicht, behalten die Sensoren ihren letzten Wert. Schlagen **Abrufe über etwa 90 Sekunden** hinweg fehl (beim Standardintervall drei in Folge, bei längerem Intervall entsprechend weniger), werden alle Sensoren **„nicht verfügbar“** und im Log erscheint einmal eine Fehlermeldung. Sobald der Wechselrichter wieder antwortet, werden die Sensoren wieder verfügbar und die Wiederherstellung wird einmal geloggt. So zeigt kein Sensor veraltete Werte als aktuell an. Ein Ausfall des optionalen BA-Sensors macht die übrigen Werte nicht nicht verfügbar.
 
 Im Standby (nachts) ist der Wechselrichter erreichbar und meldet den Status „Aus“; die Sensoren bleiben dann verfügbar.
 

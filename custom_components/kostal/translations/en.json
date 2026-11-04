@@ -46,9 +46,10 @@
     "step": {
       "init": {
         "title": "Kostal Piko",
-        "description": "Choose which sensors are created. Existing sensors keep their entity IDs.",
+        "description": "How often the inverter is read. The inverter needs about 1 s per page, so values below 10 s make no sense. Choose the sensors that are created and how often they are updated.",
         "data": {
-          "monitored_conditions": "Sensors"
+          "monitored_conditions": "Sensors",
+          "scan_interval": "Update interval (seconds)"
         }
       }
     }

@@ -10,15 +10,28 @@ from homeassistant.const import (
     CONF_MONITORED_CONDITIONS,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+)
 from homeassistant.util import slugify
 
 from .client import KostalAuthError, KostalClient, KostalError, PikoInfo
-from .const import DEFAULT_NAME, DOMAIN, SENSOR_TYPES
+from .const import (
+    DEFAULT_NAME,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    SENSOR_TYPES,
+)
 
 SUPPORTED_SENSOR_TYPES = list(SENSOR_TYPES)
 
@@ -221,17 +234,33 @@ class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
     async def async_step_init(self, user_input=None):
         """Manage the monitored sensors."""
         if user_input is not None:
+            user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
             return self.async_create_entry(data=user_input)
 
         current = self.config_entry.options.get(
             CONF_MONITORED_CONDITIONS,
             self.config_entry.data.get(CONF_MONITORED_CONDITIONS, []),
         )
+        interval = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL,
+            self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        )
         schema = vol.Schema(
             {
                 vol.Required(
                     CONF_MONITORED_CONDITIONS, default=list(current)
                 ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
+                vol.Required(
+                    CONF_SCAN_INTERVAL, default=interval
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_SCAN_INTERVAL,
+                        max=MAX_SCAN_INTERVAL,
+                        step=1,
+                        unit_of_measurement="s",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

@@ -2,12 +2,14 @@
 
 import logging
 from dataclasses import dataclass
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
     CONF_MONITORED_CONDITIONS,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
@@ -70,7 +72,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
     if entry.unique_id is None:
         hass.config_entries.async_update_entry(entry, unique_id=info.serial_number)
 
-    coordinator = KostalCoordinator(hass, entry, client)
+    coordinator = KostalCoordinator(
+        hass, entry, client, timedelta(seconds=conf[CONF_SCAN_INTERVAL])
+    )
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = KostalRuntimeData(

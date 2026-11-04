@@ -46,9 +46,10 @@
     "step": {
       "init": {
         "title": "Kostal Piko",
-        "description": "Wähle, welche Sensoren angelegt werden. Vorhandene Sensoren behalten ihre Entitäts-IDs.",
+        "description": "Wie oft der Wechselrichter ausgelesen wird. Der Wechselrichter braucht etwa 1 s pro Seite, Werte unter 10 s sind nicht sinnvoll. Wähle, welche Sensoren angelegt werden und wie oft sie aktualisiert werden.",
         "data": {
-          "monitored_conditions": "Sensoren"
+          "monitored_conditions": "Sensoren",
+          "scan_interval": "Abfrageintervall (Sekunden)"
         }
       }
     }

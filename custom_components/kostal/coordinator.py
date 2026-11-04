@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
+from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -15,8 +16,7 @@ from .client import KostalAuthError, KostalClient, KostalError
 from .const import (
     DOMAIN,
     EFFICIENCY_WINDOW,
-    FAILURES_BEFORE_UNAVAILABLE,
-    MIN_TIME_BETWEEN_UPDATES,
+    UNAVAILABLE_AFTER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,22 +25,29 @@ _LOGGER = logging.getLogger(__name__)
 class KostalCoordinator(DataUpdateCoordinator):
     """Fetch all inverter values with a single request set per interval.
 
-    A single failed poll keeps the last values; after
-    FAILURES_BEFORE_UNAVAILABLE failed polls in a row all entities become
-    unavailable. The coordinator logs the failure once and the recovery once.
+    A failed poll keeps the last values; after UNAVAILABLE_AFTER (about 90
+    seconds, so 3 polls with the default interval) of failed polls in a row
+    all entities become unavailable. The coordinator logs the failure once and the recovery once.
     Wrong credentials start a re-authentication immediately.
     """
 
-    def __init__(self, hass: HomeAssistant, entry, client: KostalClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry,
+        client: KostalClient,
+        update_interval: timedelta,
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             config_entry=entry,
             name=DOMAIN,
-            update_interval=MIN_TIME_BETWEEN_UPDATES,
+            update_interval=update_interval,
         )
         self.client = client
         self._failures = 0
+        self._failure_limit = max(1, round(UNAVAILABLE_AFTER / update_interval))
         # (time, AC power, DC power) of the last EFFICIENCY_WINDOW
         self._samples: deque = deque()
 
@@ -77,12 +84,12 @@ class KostalCoordinator(DataUpdateCoordinator):
             raise ConfigEntryAuthFailed("Invalid username or password") from err
         except KostalError as err:
             self._failures += 1
-            if self.data is None or self._failures >= FAILURES_BEFORE_UNAVAILABLE:
+            if self.data is None or self._failures >= self._failure_limit:
                 raise UpdateFailed(f"Inverter not reachable: {err}") from err
             _LOGGER.debug(
                 "Poll %s of %s failed, keeping last values: %s",
                 self._failures,
-                FAILURES_BEFORE_UNAVAILABLE,
+                self._failure_limit,
                 err,
             )
             return self.data

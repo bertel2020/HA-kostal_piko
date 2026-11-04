@@ -196,3 +196,26 @@ async def test_reauth_with_wrong_password_stays_in_form(hass, fake_piko):
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "invalid_auth"}
+
+
+async def test_options_flow_sets_the_update_interval(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="SN123", title="kostal_piko", data=USER_INPUT
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.runtime_data.coordinator.update_interval.total_seconds() == 30
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {"monitored_conditions": ["current_power"], "scan_interval": 60.0},
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["scan_interval"] == 60
+    assert isinstance(entry.options["scan_interval"], int)
+    # the entry was reloaded with the new interval
+    assert entry.runtime_data.coordinator.update_interval.total_seconds() == 60

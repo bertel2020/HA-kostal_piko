@@ -68,7 +68,7 @@ Settings → Devices & Services → Add Integration → **Kostal Piko**.
 
 The connection (including the credentials) is checked when saving. If the inverter is unreachable or the credentials are wrong, an error is shown. The same inverter cannot be added twice; its serial number is used as identifier.
 
-The selection of sensors can be changed later with the **Configure** button of the integration. The integration then reloads; existing sensors keep their entity IDs.
+The selection of sensors and the **update interval** (10 to 600 seconds, default 30) can be changed later with the **Configure** button of the integration. The integration then reloads; existing sensors keep their entity IDs. The inverter needs about 1 second per page and is not a fast server; values below 10 seconds make no sense.
 
 Host, username and password can be changed via ⋮ → **Reconfigure** without deleting the integration. If the new address belongs to a different inverter (different serial number) the change is rejected. Entities and history are kept.
 
@@ -110,7 +110,7 @@ Under Settings → Devices & Services → Kostal Piko → ⋮ → **Download dia
 
 ### Behaviour on failure
 
-All sensors are updated by a shared coordinator every 30 seconds (one request per interval, not per sensor). If the inverter does not respond once or twice, the sensors keep their last value. If **three polls in a row** fail (about 1.5 minutes), all sensors become **"unavailable"** and one error is written to the log. As soon as the inverter responds again the sensors become available and the recovery is logged once. This way no sensor presents stale values as current. A failure of the optional BA sensor does not make the other values unavailable.
+All sensors are updated by a shared coordinator at the configured interval (default 30 seconds, one request per interval, not per sensor). If the inverter does not respond once or twice, the sensors keep their last value. If polls fail **for about 90 seconds** (three in a row with the default interval, fewer with a longer interval), all sensors become **"unavailable"** and one error is written to the log. As soon as the inverter responds again the sensors become available and the recovery is logged once. This way no sensor presents stale values as current. A failure of the optional BA sensor does not make the other values unavailable.
 
 In standby (at night) the inverter is reachable and reports the status "Aus" (off); the sensors stay available.
 

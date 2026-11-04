@@ -1,4 +1,5 @@
 """Tests for setup, entities and entity preservation."""
+import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -277,3 +278,29 @@ async def test_efficiency_unknown_in_standby_after_the_window(hass, fake_piko, f
     await coordinator.async_refresh()
     await hass.async_block_till_done()
     assert hass.states.get(entity).state == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("interval", "failures_until_unavailable"),
+    [(10, 9), (30, 3), (90, 1), (600, 1)],
+)
+async def test_unavailable_after_about_90_seconds_for_any_interval(
+    hass, fake_piko, interval, failures_until_unavailable
+):
+    entry = _entry(options={"scan_interval": interval})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data.coordinator
+    assert coordinator.update_interval.total_seconds() == interval
+    entity = "sensor.kostal_piko_current_power"
+
+    fake_piko.fail = True
+    for _ in range(failures_until_unavailable - 1):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(entity).state == "340"
+
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity).state == "unavailable"
