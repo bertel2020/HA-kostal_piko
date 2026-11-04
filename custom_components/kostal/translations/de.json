@@ -20,5 +20,16 @@
     "abort": {
       "already_configured": "Dieser Wechselrichter ist bereits eingerichtet."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Kostal Piko",
+        "description": "Wähle, welche Sensoren angelegt werden. Vorhandene Sensoren behalten ihre Entitäts-IDs.",
+        "data": {
+          "monitored_conditions": "Sensoren"
+        }
+      }
+    }
   }
 }

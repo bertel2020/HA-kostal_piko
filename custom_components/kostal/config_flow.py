@@ -48,6 +48,12 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Return the options flow to change the monitored sensors."""
+        return KostalOptionsFlow()
+
     def __init__(self):
         """Initialize."""
         self._errors = {}
@@ -139,3 +145,25 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=setup_schema, errors=self._errors
         )
+
+
+class KostalOptionsFlow(config_entries.OptionsFlow):
+    """Allow changing the monitored sensors of an existing entry."""
+
+    async def async_step_init(self, user_input=None):
+        """Manage the monitored sensors."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        current = self.config_entry.options.get(
+            CONF_MONITORED_CONDITIONS,
+            self.config_entry.data.get(CONF_MONITORED_CONDITIONS, []),
+        )
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_MONITORED_CONDITIONS, default=list(current)
+                ): cv.multi_select(SUPPORTED_SENSOR_TYPES),
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema)

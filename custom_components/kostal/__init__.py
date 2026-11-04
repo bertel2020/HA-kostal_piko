@@ -75,8 +75,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
         monitored_conditions=conf[CONF_MONITORED_CONDITIONS],
     )
 
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: KostalConfigEntry) -> None:
+    """Reload the entry when the options (monitored sensors) changed."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bool:
