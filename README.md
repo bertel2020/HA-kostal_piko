@@ -70,6 +70,8 @@ Beim Speichern wird die Verbindung geprüft (inklusive Zugangsdaten). Ist der We
 
 Die Auswahl der Sensoren lässt sich später über den **Konfigurieren**-Button der Integration ändern. Die Integration lädt sich dann neu; vorhandene Sensoren behalten ihre Entity-IDs.
 
+Host, Benutzername und Passwort lassen sich über ⋮ → **Neu konfigurieren** ändern, ohne die Integration zu löschen. Gehört die neue Adresse zu einem anderen Wechselrichter (andere Seriennummer), wird die Änderung abgelehnt. Entitäten und Verlauf bleiben erhalten.
+
 Ist der Wechselrichter beim Start von Home Assistant nicht erreichbar (z. B. nachts, wenn er ausgeschaltet ist), versucht Home Assistant die Einrichtung automatisch erneut.
 
 ## Entities
@@ -102,6 +104,10 @@ Die drei berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werd
 - **DC power** = Summe der vorhandenen String-Leistungen.
 - **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet. Ohne DC-Eingang (nachts) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden.
 
+### Diagnose
+
+Unter Einstellungen → Geräte & Dienste → Kostal Piko → ⋮ → **Diagnose herunterladen** gibt es eine JSON-Datei mit dem Zustand der Integration und den aktuellen Sensorwerten. Host, Benutzername, Passwort und Seriennummer sind darin geschwärzt. Sie eignet sich gut für Fehlermeldungen.
+
 ### Verhalten bei Ausfall
 
 Alle Sensoren werden von einem gemeinsamen Coordinator alle 30 Sekunden aktualisiert (ein Abruf pro Intervall, nicht je Sensor). Antwortet der Wechselrichter nicht (z. B. nachts), behalten die Sensoren ihren **letzten bekannten Wert**, statt „nicht verfügbar“ zu werden. Das entspricht dem Verhalten der Bibliothek `kostalpiko`.
@@ -117,6 +123,10 @@ Bei Verwendung des Repositories `rcasula/kostalpiko-homeassistant` in HACS:
 1. **Backup** in Home Assistant anlegen.
 2. In HACS das Repository auf `bertel2020/HA-kostal_piko` umstellen (altes Repository entfernen, neues als benutzerdefiniertes Repository hinzufügen und **Kostal Piko** herunterladen) und Home Assistant neu starten.
 3. Prüfen, dass die vorhandenen `sensor.kostal_piko_*` weiter Werte liefern. Es sollten **keine** Entitäten mit der Endung `_2` entstehen: Namen, `unique_id` und Gerät sind unverändert.
+
+## Entfernen
+
+Einstellungen → Geräte & Dienste → **Kostal Piko** → ⋮ → **Löschen**. Dabei werden die Entitäten und das Gerät aus Home Assistant entfernt; der Verlauf bleibt gemäß den Recorder-Einstellungen erhalten. Danach kann die Integration in HACS über ⋮ → **Entfernen** deinstalliert werden. Sind keine Einträge mehr vorhanden, lässt sich das Verzeichnis `custom_components/kostal` (bei manueller Installation) löschen.
 
 ## YAML-Einrichtung entfällt
 

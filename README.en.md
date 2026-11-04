@@ -70,6 +70,8 @@ The connection (including the credentials) is checked when saving. If the invert
 
 The selection of sensors can be changed later with the **Configure** button of the integration. The integration then reloads; existing sensors keep their entity IDs.
 
+Host, username and password can be changed via ⋮ → **Reconfigure** without deleting the integration. If the new address belongs to a different inverter (different serial number) the change is rejected. Entities and history are kept.
+
 If the inverter is unreachable when Home Assistant starts (e.g. at night when it is switched off), Home Assistant retries the setup automatically.
 
 ## Entities
@@ -102,6 +104,10 @@ The three calculated values do not come directly from the inverter but are deriv
 - **DC power** = sum of the existing string powers.
 - **Efficiency** = AC power ÷ DC power × 100, rounded to one decimal. Without DC input (at night) the value is "unknown" rather than 0 %, so averages are not skewed.
 
+### Diagnostics
+
+Under Settings → Devices & Services → Kostal Piko → ⋮ → **Download diagnostics** you get a JSON file with the state of the integration and the current sensor values. Host, username, password and serial number are redacted. It is well suited for bug reports.
+
 ### Behaviour on failure
 
 All sensors are updated by a shared coordinator every 30 seconds (one request per interval, not per sensor). If the inverter does not respond (e.g. at night), the sensors keep their **last known value** instead of becoming "unavailable". This matches the behaviour of the `kostalpiko` library.
@@ -117,6 +123,10 @@ If you use the repository `rcasula/kostalpiko-homeassistant` in HACS:
 1. Create a **backup** in Home Assistant.
 2. In HACS switch the repository to `bertel2020/HA-kostal_piko` (remove the old repository, add the new one as a custom repository and download **Kostal Piko**) and restart Home Assistant.
 3. Check that the existing `sensor.kostal_piko_*` keep delivering values. **No** entities with a `_2` suffix should appear: names, `unique_id` and device are unchanged.
+
+## Removal
+
+Settings → Devices & Services → **Kostal Piko** → ⋮ → **Delete**. This removes the entities and the device from Home Assistant; history is kept according to the recorder settings. Afterwards the integration can be uninstalled in HACS via ⋮ → **Remove**. For a manual installation, delete the `custom_components/kostal` directory once no entries are left.
 
 ## YAML setup removed
 

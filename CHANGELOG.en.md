@@ -9,6 +9,8 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 
 **New**
 - **Calculated sensors:** *String 1/2/3 power* (voltage × current per string), *DC power* (sum) and *Efficiency* (AC ÷ DC in %). They replace matching template sensors. Without DC input (at night) efficiency is "unknown" instead of 0 %.
+- **Reconfigure:** host and credentials can be changed without deleting the integration (rejected for a different serial number). Entities and history are kept.
+- **Diagnostics download** (host, username, password and serial number redacted) and `PARALLEL_UPDATES`.
 - **Options flow:** The monitored sensors can be changed afterwards via **Configure** without deleting the integration. Entity IDs are kept.
 - **Translations:** German and English for setup, options and error messages.
 - **Tests:** Automated tests against Home Assistant 2026.10.4 (config flow, options flow, setup, unload/reload, preservation of existing entities, calculations).

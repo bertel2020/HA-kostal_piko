@@ -9,6 +9,8 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
 **Neu**
 - **Berechnete Sensoren:** *String 1/2/3 power* (Spannung × Strom je String), *DC power* (Summe) und *Efficiency* (AC ÷ DC in %). Sie ersetzen entsprechende Template-Sensoren. Ohne DC-Eingang (nachts) ist der Wirkungsgrad „unbekannt“ statt 0 %.
+- **Neu konfigurieren:** Host und Zugangsdaten lassen sich ändern, ohne die Integration zu löschen (Ablehnung bei anderer Seriennummer). Entitäten und Verlauf bleiben erhalten.
+- **Diagnose-Download** (Host, Benutzername, Passwort und Seriennummer geschwärzt) und `PARALLEL_UPDATES`.
 - **Options-Flow:** Die überwachten Sensoren lassen sich nachträglich über **Konfigurieren** ändern, ohne die Integration zu löschen. Entity-IDs bleiben erhalten.
 - **Übersetzungen:** Deutsch und Englisch für Einrichtung, Optionen und Fehlermeldungen.
 - **Tests:** Automatisierte Tests gegen Home Assistant 2026.10.4 (Config-Flow, Options-Flow, Einrichtung, Entladen/Neuladen, Erhalt bestehender Entitäten, Berechnungen).
