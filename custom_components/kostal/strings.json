@@ -33,7 +33,8 @@
     "error": {
       "could_not_connect": "Could not connect to the inverter. Check the host, username and password.",
       "host_exists": "This host is already configured.",
-      "invalid_auth": "Invalid username or password."
+      "invalid_auth": "Invalid username or password.",
+      "unsupported_device": "This inverter is not supported: its web pages have an unknown structure. Open an issue at https://github.com/bertel2020/HA-kostal_piko/issues and attach the pages index.fhtml and Solar2.fhtml (remove the serial number first)."
     },
     "abort": {
       "already_configured": "This inverter is already configured.",

@@ -219,3 +219,13 @@ async def test_options_flow_sets_the_update_interval(hass, fake_piko):
     assert isinstance(entry.options["scan_interval"], int)
     # the entry was reloaded with the new interval
     assert entry.runtime_data.coordinator.update_interval.total_seconds() == 60
+
+
+async def test_unknown_page_layout_shows_unsupported_device(hass, fake_piko):
+    fake_piko.parse_fail = True
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "unsupported_device"}

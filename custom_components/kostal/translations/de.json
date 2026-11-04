@@ -33,7 +33,8 @@
     "error": {
       "could_not_connect": "Verbindung zum Wechselrichter fehlgeschlagen. Prüfe Host, Benutzername und Passwort.",
       "host_exists": "Dieser Host ist bereits eingerichtet.",
-      "invalid_auth": "Benutzername oder Passwort ist falsch."
+      "invalid_auth": "Benutzername oder Passwort ist falsch.",
+      "unsupported_device": "Dieser Wechselrichter wird nicht unterstützt: Seine Webseiten haben eine unbekannte Struktur. Eröffne ein Issue unter https://github.com/bertel2020/HA-kostal_piko/issues und hänge die Seiten index.fhtml und Solar2.fhtml an (vorher die Seriennummer entfernen)."
     },
     "abort": {
       "already_configured": "Dieser Wechselrichter ist bereits eingerichtet.",

@@ -85,7 +85,7 @@ class KostalCoordinator(DataUpdateCoordinator):
         except KostalError as err:
             self._failures += 1
             if self.data is None or self._failures >= self._failure_limit:
-                raise UpdateFailed(f"Inverter not reachable: {err}") from err
+                raise UpdateFailed(f"Update of the inverter failed: {err}") from err
             _LOGGER.debug(
                 "Poll %s of %s failed, keeping last values: %s",
                 self._failures,

@@ -23,7 +23,13 @@ from homeassistant.helpers.selector import (
 )
 from homeassistant.util import slugify
 
-from .client import KostalAuthError, KostalClient, KostalError, PikoInfo
+from .client import (
+    KostalAuthError,
+    KostalClient,
+    KostalError,
+    KostalParseError,
+    PikoInfo,
+)
 from .const import (
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
@@ -62,9 +68,16 @@ async def async_check_connection(
     """Try to read the inverter. Returns (info, None) or (None, error key)."""
     client = KostalClient(async_get_clientsession(hass), host, username, password)
     try:
-        return await client.async_get_info(), None
+        info = await client.async_get_info()
+        # also read the main page: it shows whether the page layout of this
+        # inverter is known
+        await client.async_get_data()
+        return info, None
     except KostalAuthError:
         return None, "invalid_auth"
+    except KostalParseError as err:
+        _LOGGER.warning("Unsupported inverter pages at %s: %s", host, err)
+        return None, "unsupported_device"
     except KostalError as err:
         _LOGGER.debug("Cannot connect to %s: %s", host, err)
         return None, "could_not_connect"

@@ -348,3 +348,17 @@ async def test_two_inverters_keep_their_own_entities(hass, fake_piko):
     for entry in entries:
         devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
         assert len(devices) == 1
+
+
+async def test_unknown_page_layout_is_retried_with_a_clear_message(
+    hass, fake_piko, caplog
+):
+    fake_piko.parse_fail = True
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert "Unsupported page layout" in caplog.text
+    assert "not reachable" not in caplog.text
