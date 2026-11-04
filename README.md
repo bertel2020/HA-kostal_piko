@@ -84,7 +84,7 @@ Ist der Wechselrichter beim Start von Home Assistant nicht erreichbar, versucht 
 
 ## Entities
 
-Es wird ein **Gerät** (benannt nach dem Titel, Hersteller Kostal, Modell und Seriennummer vom Wechselrichter) mit den gewählten Sensoren angelegt. Die Entity-ID entsteht aus Titel und Sensorname, bei der Standardeinstellung also `sensor.kostal_piko_<name>`.
+Es wird ein **Gerät** (benannt nach dem Titel, Hersteller Kostal, Modell und Seriennummer vom Wechselrichter) mit den gewählten Sensoren angelegt. Die Entity-ID entsteht aus Titel und Sensorname, bei der Standardeinstellung also `sensor.kostal_piko_<name>`. Die **angezeigten Namen** sind übersetzt (Deutsch und Englisch, z. B. „Aktuelle Leistung“ statt „Current power“). Die Entity-IDs bleiben dabei immer englisch und ändern sich nicht, auch nicht bei vorhandenen Entitäten. Die Tabelle nennt die englischen Namen.
 
 | Sensor | Entity-ID | Einheit | Beschreibung |
 |---|---|---|---|

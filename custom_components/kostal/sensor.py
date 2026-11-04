@@ -67,10 +67,13 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         self.type = sensor_type
         self._sensor = name
 
-        # name and unique_id are deliberately unchanged compared to earlier
+        # unique_id and entity_id are deliberately unchanged compared to earlier
         # versions, so existing entities (entity_id, history, statistics)
-        # are kept when the integration is replaced.
-        self._attr_name = "{} {}".format(title, name)
+        # are kept when the integration is replaced. Only the displayed name
+        # is translated.
+        self._attr_has_entity_name = True
+        self._attr_translation_key = sensor_type
+        self._object_id = name  # english, HA puts the device name in front
         self._attr_unique_id = "{} {}".format(runtime.serial_number, name)
         self._attr_icon = icon
         self._attr_native_unit_of_measurement = unit
@@ -84,6 +87,11 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
             manufacturer="Kostal",
             model=runtime.model,
         )
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Keep the entity_id independent of the language of the name (HA adds the device name)."""
+        return self._object_id
 
     @property
     def native_value(self):

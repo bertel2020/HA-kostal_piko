@@ -16,6 +16,7 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 - **Adjustable update interval** (10 to 600 seconds, default 30) via **Configure**. The time until "unavailable" stays at about 90 seconds regardless of the interval.
 
 **Changed**
+- **Sensor names translated** (German and English, e.g. "Aktuelle Leistung"). Only the displayed name changes, entity IDs and `unique_id` stay the same, also for new installations with a German interface. Names you set yourself are kept.
 - **Unsupported inverters** are reported clearly during setup ("This inverter is not supported", with a hint to open an issue) instead of "could not connect". For this the setup also reads the main page. The log message of a failed update no longer claims that the inverter is unreachable.
 - **Efficiency smoothed:** It is averaged over the last 5 minutes (sum AC ÷ sum DC) instead of being calculated from a single poll, which varied by several percent when the irradiation changed.
 - Dependency `lxml` instead of `kostalpiko`. Minimum Home Assistant **2025.8.0** (the options flow reloads the integration itself).

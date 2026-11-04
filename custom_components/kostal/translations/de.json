@@ -54,5 +54,84 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "solar_generator_power": {
+        "name": "Solargenerator-Leistung"
+      },
+      "consumption_phase_1": {
+        "name": "Verbrauch Phase 1"
+      },
+      "consumption_phase_2": {
+        "name": "Verbrauch Phase 2"
+      },
+      "consumption_phase_3": {
+        "name": "Verbrauch Phase 3"
+      },
+      "current_power": {
+        "name": "Aktuelle Leistung"
+      },
+      "total_energy": {
+        "name": "Gesamtenergie"
+      },
+      "daily_energy": {
+        "name": "Tagesenergie"
+      },
+      "string1_voltage": {
+        "name": "String 1 Spannung"
+      },
+      "string1_current": {
+        "name": "String 1 Strom"
+      },
+      "string2_voltage": {
+        "name": "String 2 Spannung"
+      },
+      "string2_current": {
+        "name": "String 2 Strom"
+      },
+      "string3_voltage": {
+        "name": "String 3 Spannung"
+      },
+      "string3_current": {
+        "name": "String 3 Strom"
+      },
+      "l1_voltage": {
+        "name": "L1 Spannung"
+      },
+      "l1_power": {
+        "name": "L1 Leistung"
+      },
+      "l2_voltage": {
+        "name": "L2 Spannung"
+      },
+      "l2_power": {
+        "name": "L2 Leistung"
+      },
+      "l3_voltage": {
+        "name": "L3 Spannung"
+      },
+      "l3_power": {
+        "name": "L3 Leistung"
+      },
+      "status": {
+        "name": "Status"
+      },
+      "string1_power": {
+        "name": "String 1 Leistung"
+      },
+      "string2_power": {
+        "name": "String 2 Leistung"
+      },
+      "string3_power": {
+        "name": "String 3 Leistung"
+      },
+      "dc_power": {
+        "name": "DC-Leistung"
+      },
+      "efficiency": {
+        "name": "Wirkungsgrad"
+      }
+    }
   }
 }

@@ -84,7 +84,7 @@ If the inverter is unreachable when Home Assistant starts, Home Assistant retrie
 
 ## Entities
 
-One **device** (named after the title, manufacturer Kostal, model and serial number from the inverter) is created with the selected sensors. The entity ID is built from title and sensor name, so with the default settings it is `sensor.kostal_piko_<name>`.
+One **device** (named after the title, manufacturer Kostal, model and serial number from the inverter) is created with the selected sensors. The entity ID is built from title and sensor name, so with the default settings it is `sensor.kostal_piko_<name>`. The **displayed names** are translated (English and German, e.g. "Aktuelle Leistung" for "Current power"). Entity IDs always stay English and do not change, not even for existing entities.
 
 | Sensor | Entity ID | Unit | Description |
 |---|---|---|---|

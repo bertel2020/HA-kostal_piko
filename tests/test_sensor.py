@@ -83,6 +83,47 @@ async def test_existing_entities_are_kept(hass, fake_piko):
     assert hass.states.get(entity_id).state == "340"
 
 
+async def test_german_names_keep_the_entity_ids(hass, fake_piko):
+    """The language only changes the displayed name, never the entity_id."""
+    hass.config.language = "de"
+    entry = _entry()
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    # registered by an older version (English name, same entity_id)
+    registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        "SN123 Current power",
+        suggested_object_id="kostal_piko_current_power",
+        config_entry=entry,
+    )
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # the old entity keeps its id, a new one gets the same kind of id
+    old = hass.states.get("sensor.kostal_piko_current_power")
+    new = hass.states.get("sensor.kostal_piko_string_1_power")
+    assert old.state == "340"
+    assert new is not None
+    assert old.attributes["friendly_name"] == "kostal_piko Aktuelle Leistung"
+    assert new.attributes["friendly_name"] == "kostal_piko String 1 Leistung"
+    assert hass.states.get("sensor.kostal_piko_efficiency").attributes[
+        "friendly_name"
+    ] == "kostal_piko Wirkungsgrad"
+    assert not [e for e in registry.entities if e.endswith("_2")]
+
+
+async def test_english_names_are_unchanged(hass, fake_piko):
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.kostal_piko_current_power")
+    assert state.attributes["friendly_name"] == "kostal_piko Current power"
+
+
 async def test_unique_id_and_device(hass, fake_piko):
     entry = _entry()  # created by an older version: no unique_id
     entry.add_to_hass(hass)
