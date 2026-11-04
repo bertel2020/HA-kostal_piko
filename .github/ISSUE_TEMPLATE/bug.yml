@@ -1,0 +1,36 @@
+name: Bug melden / Report a bug
+description: Etwas funktioniert nicht wie erwartet / Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Was passiert, und was hast du erwartet? / What happens, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versionen / Versions
+      description: Version der Integration und von Home Assistant / Integration and Home Assistant version
+      placeholder: "Integration 2.2.0, Home Assistant 2026.10.4"
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Wechselrichter / Inverter
+      description: Modell und Firmware (zu sehen auf der Seite Solar2.fhtml) / Model and firmware
+      placeholder: PIKO 10.1
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log und Diagnose / Log and diagnostics
+      description: >
+        Relevante Zeilen aus dem Log und, wenn möglich, die Diagnosedaten
+        (Einstellungen → Geräte & Dienste → Kostal Piko → ⋮ → Diagnose herunterladen).
+        Please add the relevant log lines and, if possible, the downloaded diagnostics.
+      render: text

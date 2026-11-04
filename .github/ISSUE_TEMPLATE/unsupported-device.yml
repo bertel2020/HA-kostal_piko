@@ -1,0 +1,43 @@
+name: Gerät wird nicht unterstützt / Unsupported inverter
+description: Die Einrichtung meldet "Dieser Wechselrichter wird nicht unterstützt" / Setup reports "This inverter is not supported"
+labels: [device support]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Die Integration liest die alte Weboberfläche ("PV Webserver") des Wechselrichters.
+        Mit den Angaben unten kann geprüft werden, ob und wie dein Modell unterstützt werden kann.
+        **Bitte entferne vor dem Einfügen die Seriennummer.**
+
+        The integration reads the old web interface ("PV Webserver") of the inverter.
+        **Please remove the serial number before pasting.**
+  - type: input
+    id: model
+    attributes:
+      label: Modell und Firmware / Model and firmware
+      placeholder: PIKO 8.3
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: Ausgabe von scripts/check_inverter.py / Output of scripts/check_inverter.py
+      description: "Aufruf: uv run --with aiohttp --with lxml scripts/check_inverter.py http://<adresse> <benutzer>"
+      render: text
+  - type: textarea
+    id: index
+    attributes:
+      label: Inhalt von index.fhtml (http://<adresse>/index.fhtml)
+      description: Quelltext der Seite, falls sie erreichbar ist / Page source, if reachable
+      render: html
+  - type: textarea
+    id: solar2
+    attributes:
+      label: Inhalt von Solar2.fhtml (http://<adresse>/Solar2.fhtml)
+      description: Seriennummer vorher entfernen / Remove the serial number first
+      render: html
+  - type: textarea
+    id: other
+    attributes:
+      label: Sonstiges / Other
+      description: Zum Beispiel, wie die Weboberfläche im Browser aussieht / For example, what the web interface looks like in a browser
