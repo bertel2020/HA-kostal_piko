@@ -5,6 +5,15 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
+## 2.3.0 – 2026-11-04
+
+**Neu**
+- **Sensor „Average power 15 min“** (`sensor.kostal_piko_average_power_15_min`, optional): Mittelwert der AC-Leistung über die letzten 15 Minuten, ersetzt einen Statistik-Helfer auf `current_power`.
+
+**Geändert**
+- **Einrichtung in zwei Schritten:** zuerst die Verbindung, dann die Sensorauswahl. Vorausgewählt ist, was der Wechselrichter liefert (nur vorhandene Strings und Phasen; BA-Sensoren nur mit gemeldeten Werten). Die Sensoren sind in Gruppen geordnet und zeigen lesbare Namen (auch unter **Konfigurieren**), das Passwortfeld ist verdeckt und die Felder haben Hilfetexte. Bestehende Einträge bleiben unverändert.
+- **Sensornamen übersetzt** (Deutsch und Englisch, z. B. „Aktuelle Leistung“). Nur der angezeigte Name ändert sich, Entity-IDs und `unique_id` bleiben gleich, auch bei neuen Installationen mit deutscher Oberfläche. Selbst vergebene Namen bleiben erhalten.
+
 ## 2.2.0 – 2026-11-04
 
 **Neu**
@@ -13,12 +22,9 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 - **Skript `scripts/check_inverter.py`** liest einen Wechselrichter mit dem Client aus und gibt alle Werte aus (Passwort wird abgefragt).
 
 **Neu (Fortsetzung)**
-- **Sensor „Average power 15 min“** (`sensor.kostal_piko_average_power_15_min`, optional): Mittelwert der AC-Leistung über die letzten 15 Minuten, ersetzt einen Statistik-Helfer auf `current_power`.
 - **Abfrageintervall einstellbar** (10 bis 600 Sekunden, Standard 30) über **Konfigurieren**. Die Zeit bis „nicht verfügbar“ bleibt bei etwa 90 Sekunden, unabhängig vom Intervall.
 
 **Geändert**
-- **Einrichtung in zwei Schritten:** zuerst die Verbindung, dann die Sensorauswahl. Vorausgewählt ist, was der Wechselrichter liefert (nur vorhandene Strings und Phasen; BA-Sensoren nur mit gemeldeten Werten). Die Sensoren sind in Gruppen geordnet und zeigen lesbare Namen (auch unter **Konfigurieren**), das Passwortfeld ist verdeckt und die Felder haben Hilfetexte. Bestehende Einträge bleiben unverändert.
-- **Sensornamen übersetzt** (Deutsch und Englisch, z. B. „Aktuelle Leistung“). Nur der angezeigte Name ändert sich, Entity-IDs und `unique_id` bleiben gleich, auch bei neuen Installationen mit deutscher Oberfläche. Selbst vergebene Namen bleiben erhalten.
 - **Nicht unterstützte Wechselrichter** werden beim Einrichten klar gemeldet („Dieser Wechselrichter wird nicht unterstützt“, mit Hinweis auf ein Issue) statt „Verbindung fehlgeschlagen“. Dazu liest die Einrichtung auch die Messwert-Seite. Die Log-Meldung eines fehlgeschlagenen Updates behauptet nicht mehr, der Wechselrichter sei nicht erreichbar.
 - **Wirkungsgrad geglättet:** Er wird über die letzten 5 Minuten gemittelt (Summe AC ÷ Summe DC) statt aus einem einzelnen Abruf berechnet, der bei wechselnder Einstrahlung um mehrere Prozent schwankte.
 - Abhängigkeit `lxml` statt `kostalpiko`. Mindestversion Home Assistant **2025.8.0** (Options-Flow lädt die Integration selbst neu).
