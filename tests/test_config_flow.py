@@ -84,3 +84,69 @@ async def test_options_flow_changes_sensors(hass, fake_piko):
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["monitored_conditions"] == ["current_power", "dc_power"]
+
+
+async def _reconfigure(hass, entry, user_input):
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input
+    )
+
+
+async def test_reconfigure_updates_connection(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="SN123", title="kostal_piko", data=USER_INPUT
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await _reconfigure(
+        hass,
+        entry,
+        {"host": "http://10.0.0.5", "username": "pvserver", "password": "new"},
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["host"] == "http://10.0.0.5"
+    assert entry.data["password"] == "new"
+    assert entry.data["monitored_conditions"] == USER_INPUT["monitored_conditions"]
+    # entities are kept
+    assert hass.states.get("sensor.kostal_piko_current_power").state == "340"
+    assert hass.states.get("sensor.kostal_piko_current_power_2") is None
+
+
+async def test_reconfigure_rejects_other_inverter(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="OTHER", title="kostal_piko", data=USER_INPUT
+    )
+    entry.add_to_hass(hass)
+
+    result = await _reconfigure(
+        hass,
+        entry,
+        {"host": "http://10.0.0.5", "username": "pvserver", "password": "pvwr"},
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_device"
+    assert entry.data["host"] == USER_INPUT["host"]
+
+
+async def test_reconfigure_unreachable_shows_error(hass, fake_piko):
+    fake_piko.info = None
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="SN123", title="kostal_piko", data=USER_INPUT
+    )
+    entry.add_to_hass(hass)
+
+    result = await _reconfigure(
+        hass,
+        entry,
+        {"host": "http://10.0.0.5", "username": "pvserver", "password": "pvwr"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"host": "could_not_connect"}

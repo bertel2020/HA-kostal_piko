@@ -11,6 +11,15 @@
           "password": "Passwort",
           "monitored_conditions": "Sensoren"
         }
+      },
+      "reconfigure": {
+        "title": "Kostal Piko",
+        "description": "Adresse oder Zugangsdaten des Wechselrichters ändern. Sensoren und Verlauf bleiben erhalten.",
+        "data": {
+          "host": "Host (z. B. http://192.168.1.50)",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
       }
     },
     "error": {
@@ -18,7 +27,9 @@
       "host_exists": "Dieser Host ist bereits eingerichtet."
     },
     "abort": {
-      "already_configured": "Dieser Wechselrichter ist bereits eingerichtet."
+      "already_configured": "Dieser Wechselrichter ist bereits eingerichtet.",
+      "reconfigure_successful": "Die Verbindung wurde aktualisiert.",
+      "wrong_device": "Diese Adresse gehört zu einem anderen Wechselrichter (Seriennummer stimmt nicht überein)."
     }
   },
   "options": {

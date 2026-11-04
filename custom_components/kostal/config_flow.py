@@ -146,6 +146,41 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=setup_schema, errors=self._errors
         )
 
+    async def async_step_reconfigure(self, user_input=None):
+        """Change host and credentials of an existing entry."""
+        entry = self._get_reconfigure_entry()
+        errors = {}
+
+        if user_input is not None:
+            info = await self.hass.async_add_executor_job(
+                self._check_host,
+                user_input[CONF_HOST],
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+            )
+            if info is None:
+                errors[CONF_HOST] = "could_not_connect"
+            elif entry.unique_id and info[0] != entry.unique_id:
+                return self.async_abort(reason="wrong_device")
+            else:
+                # The update listener reloads the entry exactly once.
+                self.hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, **user_input}
+                )
+                return self.async_abort(reason="reconfigure_successful")
+
+        current = user_input or entry.data
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=current.get(CONF_HOST, "http://")): str,
+                vol.Required(CONF_USERNAME, default=current.get(CONF_USERNAME, "")): str,
+                vol.Required(CONF_PASSWORD, default=current.get(CONF_PASSWORD, "")): str,
+            }
+        )
+        return self.async_show_form(
+            step_id="reconfigure", data_schema=schema, errors=errors
+        )
+
 
 class KostalOptionsFlow(config_entries.OptionsFlow):
     """Allow changing the monitored sensors of an existing entry."""
