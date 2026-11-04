@@ -72,7 +72,7 @@ The selection of sensors can be changed later with the **Configure** button of t
 
 Host, username and password can be changed via ⋮ → **Reconfigure** without deleting the integration. If the new address belongs to a different inverter (different serial number) the change is rejected. Entities and history are kept.
 
-If the inverter is unreachable when Home Assistant starts (e.g. at night when it is switched off), Home Assistant retries the setup automatically.
+If the inverter is unreachable when Home Assistant starts, Home Assistant retries the setup automatically.
 
 ## Entities
 
@@ -102,7 +102,7 @@ The three calculated values do not come directly from the inverter but are deriv
 
 - **String N power** = voltage × current, rounded to whole watts. If the inverter has fewer than three strings the value is "unknown".
 - **DC power** = sum of the existing string powers.
-- **Efficiency** = AC power ÷ DC power × 100, rounded to one decimal. Without DC input (at night) the value is "unknown" rather than 0 %, so averages are not skewed.
+- **Efficiency** = AC power ÷ DC power × 100, rounded to one decimal. Without DC input (standby) the value is "unknown" rather than 0 %, so averages are not skewed.
 
 ### Diagnostics
 
@@ -110,7 +110,9 @@ Under Settings → Devices & Services → Kostal Piko → ⋮ → **Download dia
 
 ### Behaviour on failure
 
-All sensors are updated by a shared coordinator every 30 seconds (one request per interval, not per sensor). If the inverter does not respond (e.g. at night), the sensors keep their **last known value** instead of becoming "unavailable". This matches the behaviour of the `kostalpiko` library.
+All sensors are updated by a shared coordinator every 30 seconds (one request per interval, not per sensor). If the inverter does not respond once or twice, the sensors keep their last value. If **three polls in a row** fail (about 1.5 minutes), all sensors become **"unavailable"** and one error is written to the log. As soon as the inverter responds again the sensors become available and the recovery is logged once. This way no sensor presents stale values as current. A failure of the optional BA sensor does not make the other values unavailable.
+
+In standby (at night) the inverter is reachable and reports the status "Aus" (off); the sensors stay available.
 
 ### BA sensor
 

@@ -72,7 +72,7 @@ Die Auswahl der Sensoren lässt sich später über den **Konfigurieren**-Button 
 
 Host, Benutzername und Passwort lassen sich über ⋮ → **Neu konfigurieren** ändern, ohne die Integration zu löschen. Gehört die neue Adresse zu einem anderen Wechselrichter (andere Seriennummer), wird die Änderung abgelehnt. Entitäten und Verlauf bleiben erhalten.
 
-Ist der Wechselrichter beim Start von Home Assistant nicht erreichbar (z. B. nachts, wenn er ausgeschaltet ist), versucht Home Assistant die Einrichtung automatisch erneut.
+Ist der Wechselrichter beim Start von Home Assistant nicht erreichbar, versucht Home Assistant die Einrichtung automatisch erneut.
 
 ## Entities
 
@@ -102,7 +102,7 @@ Die drei berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werd
 
 - **String N power** = Spannung × Strom, auf ganze Watt gerundet. Hat der Wechselrichter weniger als drei Strings, ist der Wert „unbekannt“.
 - **DC power** = Summe der vorhandenen String-Leistungen.
-- **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet. Ohne DC-Eingang (nachts) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden.
+- **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet. Ohne DC-Eingang (Standby) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden.
 
 ### Diagnose
 
@@ -110,7 +110,9 @@ Unter Einstellungen → Geräte & Dienste → Kostal Piko → ⋮ → **Diagnose
 
 ### Verhalten bei Ausfall
 
-Alle Sensoren werden von einem gemeinsamen Coordinator alle 30 Sekunden aktualisiert (ein Abruf pro Intervall, nicht je Sensor). Antwortet der Wechselrichter nicht (z. B. nachts), behalten die Sensoren ihren **letzten bekannten Wert**, statt „nicht verfügbar“ zu werden. Das entspricht dem Verhalten der Bibliothek `kostalpiko`.
+Alle Sensoren werden von einem gemeinsamen Coordinator alle 30 Sekunden aktualisiert (ein Abruf pro Intervall, nicht je Sensor). Antwortet der Wechselrichter einmal oder zweimal nicht, behalten die Sensoren ihren letzten Wert. Schlagen **drei Abrufe in Folge** fehl (etwa 1,5 Minuten), werden alle Sensoren **„nicht verfügbar“** und im Log erscheint einmal eine Fehlermeldung. Sobald der Wechselrichter wieder antwortet, werden die Sensoren wieder verfügbar und die Wiederherstellung wird einmal geloggt. So zeigt kein Sensor veraltete Werte als aktuell an. Ein Ausfall des optionalen BA-Sensors macht die übrigen Werte nicht nicht verfügbar.
+
+Im Standby (nachts) ist der Wechselrichter erreichbar und meldet den Status „Aus“; die Sensoren bleiben dann verfügbar.
 
 ### BA-Sensor
 

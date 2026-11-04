@@ -8,7 +8,7 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 ## 2.1.0 – 2026-11-04
 
 **Neu**
-- **Berechnete Sensoren:** *String 1/2/3 power* (Spannung × Strom je String), *DC power* (Summe) und *Efficiency* (AC ÷ DC in %). Sie ersetzen entsprechende Template-Sensoren. Ohne DC-Eingang (nachts) ist der Wirkungsgrad „unbekannt“ statt 0 %.
+- **Berechnete Sensoren:** *String 1/2/3 power* (Spannung × Strom je String), *DC power* (Summe) und *Efficiency* (AC ÷ DC in %). Sie ersetzen entsprechende Template-Sensoren. Ohne DC-Eingang (Standby) ist der Wirkungsgrad „unbekannt“ statt 0 %.
 - **Neu konfigurieren:** Host und Zugangsdaten lassen sich ändern, ohne die Integration zu löschen (Ablehnung bei anderer Seriennummer). Entitäten und Verlauf bleiben erhalten.
 - **Diagnose-Download** (Host, Benutzername, Passwort und Seriennummer geschwärzt) und `PARALLEL_UPDATES`.
 - **Options-Flow:** Die überwachten Sensoren lassen sich nachträglich über **Konfigurieren** ändern, ohne die Integration zu löschen. Entity-IDs bleiben erhalten.
@@ -16,6 +16,7 @@ Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 - **Tests:** Automatisierte Tests gegen Home Assistant 2026.10.4 (Config-Flow, Options-Flow, Einrichtung, Entladen/Neuladen, Erhalt bestehender Entitäten, Berechnungen).
 
 **Geändert**
+- **Ausfall wird erkannt:** Nach drei fehlgeschlagenen Abrufen in Folge (~1,5 Minuten) werden die Sensoren „nicht verfügbar“ statt veraltete Werte weiterzuzeigen; Ausfall und Wiederherstellung werden je einmal geloggt. Die Bibliothek `kostalpiko` verschluckt Netzwerkfehler, deshalb werden die Seiten des Wechselrichters jetzt direkt abgefragt (`kostalpiko` auf `>=0.6,<0.7` begrenzt). Ohne diese Änderung zeigten Sensoren bei einem Ausfall weiter den letzten Wert.
 - **Gemeinsamer `DataUpdateCoordinator`** (30 s) statt eines gedrosselten Abrufs je Sensor. Die Sensoren nutzen die native Sensor-API (`native_value`, `native_unit_of_measurement`) mit echter `device_class` und `state_class` statt Attributen. Entity-ID, Name, `unique_id` und Gerät bleiben unverändert.
 - **Einrichtung beim Start:** Ist der Wechselrichter nicht erreichbar, versucht Home Assistant es automatisch erneut. Bisher blieb die Integration bis zu einem manuellen Neuladen ohne Sensoren.
 - **Seriennummer als Kennung** des Eintrags: derselbe Wechselrichter kann nicht doppelt angelegt werden. Bestehende Einträge erhalten sie beim nächsten Start.

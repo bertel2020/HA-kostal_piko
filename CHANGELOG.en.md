@@ -8,7 +8,7 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 ## 2.1.0 – 2026-11-04
 
 **New**
-- **Calculated sensors:** *String 1/2/3 power* (voltage × current per string), *DC power* (sum) and *Efficiency* (AC ÷ DC in %). They replace matching template sensors. Without DC input (at night) efficiency is "unknown" instead of 0 %.
+- **Calculated sensors:** *String 1/2/3 power* (voltage × current per string), *DC power* (sum) and *Efficiency* (AC ÷ DC in %). They replace matching template sensors. Without DC input (standby) efficiency is "unknown" instead of 0 %.
 - **Reconfigure:** host and credentials can be changed without deleting the integration (rejected for a different serial number). Entities and history are kept.
 - **Diagnostics download** (host, username, password and serial number redacted) and `PARALLEL_UPDATES`.
 - **Options flow:** The monitored sensors can be changed afterwards via **Configure** without deleting the integration. Entity IDs are kept.
@@ -16,6 +16,7 @@ Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 - **Tests:** Automated tests against Home Assistant 2026.10.4 (config flow, options flow, setup, unload/reload, preservation of existing entities, calculations).
 
 **Changed**
+- **Outages are detected:** After three failed polls in a row (~1.5 minutes) the sensors become "unavailable" instead of showing stale values; outage and recovery are each logged once. The `kostalpiko` library swallows network errors, so the inverter pages are now requested directly (`kostalpiko` limited to `>=0.6,<0.7`). Before this change sensors kept showing the last value during an outage.
 - **Shared `DataUpdateCoordinator`** (30 s) instead of a throttled request per sensor. The sensors use the native sensor API (`native_value`, `native_unit_of_measurement`) with a real `device_class` and `state_class` instead of attributes. Entity ID, name, `unique_id` and device are unchanged.
 - **Setup at startup:** If the inverter is unreachable, Home Assistant retries automatically. Before, the integration stayed without sensors until reloaded manually.
 - **Serial number as entry identifier:** the same inverter cannot be added twice. Existing entries receive it on their next start.
