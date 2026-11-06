@@ -5,7 +5,7 @@
 All notable changes to this project are documented here.
 Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 
-## Unreleased
+## 2.4.0 – 2026-11-06
 
 **New**
 - **"Plant data" step** in setup and under **Configure** (optional): installed power per string in Wp and maximum (throttled) output power in W. An empty string counts as unused.

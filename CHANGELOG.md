@@ -5,7 +5,7 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
-## Unveröffentlicht
+## 2.4.0 – 2026-11-06
 
 **Neu**
 - **Schritt „Anlagendaten“** in Einrichtung und unter **Konfigurieren** (optional): installierte Leistung je String in Wp und maximale (gedrosselte) Ausgangsleistung in W. Ein leerer String gilt als ungenutzt.

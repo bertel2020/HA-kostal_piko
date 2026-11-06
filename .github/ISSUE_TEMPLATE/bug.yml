@@ -14,7 +14,7 @@ body:
     attributes:
       label: Versionen / Versions
       description: Version der Integration und von Home Assistant / Integration and Home Assistant version
-      placeholder: "Integration 2.3.0, Home Assistant 2026.10.4"
+      placeholder: "Integration 2.4.0, Home Assistant 2026.10.4"
     validations:
       required: true
   - type: input
