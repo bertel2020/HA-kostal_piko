@@ -46,6 +46,24 @@ def mean_power(samples) -> int | None:
     return round(sum(samples) / len(samples))
 
 
+def utilization(ac, max_output) -> float | None:
+    """Return the AC power in percent of the maximum output power, or None."""
+    if ac is None or not max_output or max_output <= 0:
+        return None
+    return round(ac / max_output * 100, 1)
+
+
+def specific_yield(daily_energy, string_wp) -> float | None:
+    """Return the daily energy in kWh per installed kWp, or None.
+
+    Strings without a value (0 or None) are unused and do not count.
+    """
+    installed = sum(wp for wp in string_wp if wp)
+    if daily_energy is None or installed <= 0:
+        return None
+    return round(daily_energy / (installed / 1000), 2)
+
+
 _DATA_SENSORS = (
     "current_power", "total_energy", "daily_energy",
     "string1_voltage", "string1_current", "string2_voltage", "string2_current",

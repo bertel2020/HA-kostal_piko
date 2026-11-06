@@ -13,7 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import KostalConfigEntry
-from .calculations import dc_power, string_power
+from .calculations import dc_power, specific_yield, string_power, utilization
 from .const import DOMAIN, SENSOR_TYPES
 from .coordinator import KostalCoordinator
 
@@ -65,6 +65,7 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         _LOGGER.debug("Initializing PikoSensor: %s", sensor_type)
         name, unit, icon, state_class, device_class = SENSOR_TYPES[sensor_type]
         self.type = sensor_type
+        self._runtime = runtime
         self._sensor = name
 
         # unique_id and entity_id are deliberately unchanged compared to earlier
@@ -100,6 +101,16 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
             return self.coordinator.efficiency
         if self.type == "average_power_15min":  # mean of the last polls
             return self.coordinator.average_power
+        if self.type == "utilization":  # needs the plant data
+            return utilization(
+                (self.coordinator.data or {}).get("data", {}).get("current_power"),
+                self._runtime.max_output_power,
+            )
+        if self.type == "specific_yield":
+            return specific_yield(
+                (self.coordinator.data or {}).get("data", {}).get("daily_energy"),
+                self._runtime.string_wp.values(),
+            )
         source, getter = VALUE_GETTERS[self.type]
         obj = (self.coordinator.data or {}).get(source)
         if obj is None:

@@ -13,6 +13,16 @@ DOMAIN = "kostal"
 
 DEFAULT_NAME = "Kostal Piko"
 
+# Plant data (optional): installed power per string in Wp and the maximum
+# (throttled) AC output power in W. 0 or empty means "not set / string unused".
+CONF_MAX_OUTPUT_POWER = "max_output_power"
+STRINGS = (1, 2, 3)
+
+
+def string_wp_key(string: int) -> str:
+    """Return the config key of the installed power of a string."""
+    return f"string{string}_power_wp"
+
 # Polling interval of the inverter in seconds (adjustable in the options).
 # The inverter needs about 1 s per page, so shorter than 10 s makes no sense.
 DEFAULT_SCAN_INTERVAL = 30
@@ -60,6 +70,10 @@ SENSOR_TYPES = {
     "efficiency": ["Efficiency", PERCENTAGE, "mdi:percent", "measurement", None],
     # Mean of the AC power over the last POWER_AVERAGE_WINDOW
     "average_power_15min": ["Average power 15 min", UnitOfPower.WATT, "mdi:chart-line", "measurement", "power"],
+    # AC power / maximum output power (needs the plant data)
+    "utilization": ["Utilization", PERCENTAGE, "mdi:gauge", "measurement", None],
+    # Daily energy / installed power (needs the plant data)
+    "specific_yield": ["Specific yield", "kWh/kWp", "mdi:solar-power", "measurement", None],
 }
 
 ISSUES_URL = "https://github.com/bertel2020/HA-kostal_piko/issues"

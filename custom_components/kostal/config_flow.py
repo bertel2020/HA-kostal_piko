@@ -41,6 +41,7 @@ from .client import (
     PikoInfo,
 )
 from .const import (
+    CONF_MAX_OUTPUT_POWER,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -48,6 +49,8 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
     SENSOR_TYPES,
+    STRINGS,
+    string_wp_key,
 )
 
 SUPPORTED_SENSOR_TYPES = list(SENSOR_TYPES)
@@ -67,6 +70,7 @@ SENSOR_GROUPS: dict[str, list[str]] = {
     "power": [
         "current_power", "daily_energy", "total_energy",
         "average_power_15min", "efficiency", "status",
+        "utilization", "specific_yield",
     ],
     "dc": [
         "dc_power",
@@ -122,6 +126,44 @@ async def sensor_schema(hass: HomeAssistant, selected) -> dict:
             {"collapsed": False},
         )
     return fields
+
+
+def plant_schema(strings, defaults=None) -> dict:
+    """Return the optional plant fields: installed power per string, max. output."""
+    defaults = defaults or {}
+
+    def number(unit):
+        return NumberSelector(
+            NumberSelectorConfig(
+                min=0, max=1000000, step=1, unit_of_measurement=unit,
+                mode=NumberSelectorMode.BOX,
+            )
+        )
+
+    def optional(key):
+        value = defaults.get(key)
+        suggested = {"suggested_value": value} if value else None
+        return vol.Optional(key, description=suggested)
+
+    fields = {optional(string_wp_key(n)): number("Wp") for n in strings}
+    fields[optional(CONF_MAX_OUTPUT_POWER)] = number("W")
+    return fields
+
+
+def plant_values(user_input: dict, strings) -> dict:
+    """Return the plant values as integers; empty fields become 0 (= not set)."""
+    keys = [string_wp_key(n) for n in strings] + [CONF_MAX_OUTPUT_POWER]
+    return {key: int(user_input.get(key) or 0) for key in keys}
+
+
+def derived_sensors(values: dict) -> list[str]:
+    """Return the sensors that need plant values, for the values that are set."""
+    found = []
+    if values.get(CONF_MAX_OUTPUT_POWER):
+        found.append("utilization")
+    if any(values.get(string_wp_key(n)) for n in STRINGS):
+        found.append("specific_yield")
+    return found
 
 
 def flatten_sensors(user_input: dict) -> list[str]:
@@ -192,6 +234,7 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._name = DEFAULT_NAME
         self._connection: dict = {}
         self._sensors: list[str] = []
+        self._selected: list[str] = []
 
     def _host_in_configuration_exists(self, host) -> bool:
         """Return True if the host is already configured."""
@@ -257,16 +300,35 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_sensors(self, user_input=None):
         """Choose the sensors; all that this inverter provides are preselected."""
         if user_input is not None:
+            self._selected = flatten_sensors(user_input)
+            return await self.async_step_plant()
+
+        schema = vol.Schema(await sensor_schema(self.hass, self._sensors))
+        return self.async_show_form(step_id="sensors", data_schema=schema)
+
+    async def async_step_plant(self, user_input=None):
+        """Optional plant data: installed power per string and max. output power.
+
+        A string without a value counts as unused.
+        """
+        strings = [n for n in STRINGS if f"string{n}_power" in self._sensors]
+        if user_input is not None:
+            values = plant_values(user_input, strings)
+            sensors = self._selected + [
+                name for name in derived_sensors(values) if name not in self._selected
+            ]
             return self.async_create_entry(
                 title=self._name,
                 data={
                     **self._connection,
-                    CONF_MONITORED_CONDITIONS: flatten_sensors(user_input),
+                    CONF_MONITORED_CONDITIONS: sensors,
+                    **values,
                 },
             )
 
-        schema = vol.Schema(await sensor_schema(self.hass, self._sensors))
-        return self.async_show_form(step_id="sensors", data_schema=schema)
+        return self.async_show_form(
+            step_id="plant", data_schema=vol.Schema(plant_schema(strings))
+        )
 
     async def async_step_reconfigure(self, user_input=None):
         """Change host and credentials of an existing entry."""
@@ -357,6 +419,7 @@ class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
                 data={
                     CONF_MONITORED_CONDITIONS: flatten_sensors(user_input),
                     CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
+                    **plant_values(user_input, STRINGS),
                 }
             )
 
@@ -368,9 +431,14 @@ class KostalOptionsFlow(config_entries.OptionsFlowWithReload):
             CONF_SCAN_INTERVAL,
             self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         )
+        plant = {
+            key: self.config_entry.options.get(key, self.config_entry.data.get(key))
+            for key in (CONF_MAX_OUTPUT_POWER, *(string_wp_key(n) for n in STRINGS))
+        }
         schema = vol.Schema(
             {
                 **await sensor_schema(self.hass, current),
+                **plant_schema(STRINGS, plant),
                 vol.Required(
                     CONF_SCAN_INTERVAL, default=interval
                 ): NumberSelector(

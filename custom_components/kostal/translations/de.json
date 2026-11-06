@@ -63,6 +63,22 @@
           "username": "Benutzername",
           "password": "Passwort"
         }
+      },
+      "plant": {
+        "title": "Anlagendaten",
+        "description": "Optional. Trage die installierte Leistung jedes genutzten Strings ein, ungenutzte Strings bleiben leer. Die maximale Ausgangsleistung ist die gedrosselte AC-Leistung, die dein Wechselrichter einspeisen darf. Die Werte werden für die Sensoren Auslastung und Spezifischer Ertrag und für Karten verwendet. Beides lässt sich später über Konfigurieren ändern.",
+        "data": {
+          "string1_power_wp": "String 1 installierte Leistung",
+          "string2_power_wp": "String 2 installierte Leistung",
+          "string3_power_wp": "String 3 installierte Leistung",
+          "max_output_power": "Maximale Ausgangsleistung"
+        },
+        "data_description": {
+          "string1_power_wp": "Modulleistung von String 1 in Wp. Leer heißt: String ungenutzt.",
+          "string2_power_wp": "Modulleistung von String 2 in Wp. Leer heißt: String ungenutzt.",
+          "string3_power_wp": "Modulleistung von String 3 in Wp. Leer heißt: String ungenutzt.",
+          "max_output_power": "Maximale AC-Leistung in W, z. B. 7000 bei einem auf 70 % gedrosselten 10-kW-Wechselrichter. Leer heißt: nicht gesetzt."
+        }
       }
     },
     "error": {
@@ -84,7 +100,11 @@
         "title": "Kostal Piko",
         "description": "Wähle die Sensoren, die angelegt werden, und wie oft der Wechselrichter ausgelesen wird. Der Wechselrichter braucht etwa 1 s pro Seite, Werte unter 10 s sind nicht sinnvoll.",
         "data": {
-          "scan_interval": "Abfrageintervall (Sekunden)"
+          "scan_interval": "Abfrageintervall (Sekunden)",
+          "string1_power_wp": "String 1 installierte Leistung",
+          "string2_power_wp": "String 2 installierte Leistung",
+          "string3_power_wp": "String 3 installierte Leistung",
+          "max_output_power": "Maximale Ausgangsleistung"
         },
         "sections": {
           "power": {
@@ -111,6 +131,12 @@
               "monitored_conditions": "Sensoren"
             }
           }
+        },
+        "data_description": {
+          "string1_power_wp": "Modulleistung von String 1 in Wp. Leer heißt: String ungenutzt.",
+          "string2_power_wp": "Modulleistung von String 2 in Wp. Leer heißt: String ungenutzt.",
+          "string3_power_wp": "Modulleistung von String 3 in Wp. Leer heißt: String ungenutzt.",
+          "max_output_power": "Maximale AC-Leistung in W, z. B. 7000 bei einem auf 70 % gedrosselten 10-kW-Wechselrichter. Leer heißt: nicht gesetzt."
         }
       }
     }
@@ -194,6 +220,12 @@
       },
       "average_power_15min": {
         "name": "Leistung Schnitt 15 Minuten"
+      },
+      "utilization": {
+        "name": "Auslastung"
+      },
+      "specific_yield": {
+        "name": "Spezifischer Ertrag"
       }
     }
   }

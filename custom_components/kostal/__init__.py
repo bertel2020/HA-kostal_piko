@@ -1,7 +1,7 @@
 """The Kostal PIKO inverter sensor integration."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 import voluptuous as vol
@@ -22,11 +22,14 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import KostalAuthError, KostalClient, KostalError
 from .const import (
+    CONF_MAX_OUTPUT_POWER,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
     SENSOR_TYPES,
+    STRINGS,
+    string_wp_key,
 )
 from .coordinator import KostalCoordinator
 
@@ -50,6 +53,11 @@ ENTRY_SCHEMA = vol.Schema(
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
             vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)
         ),
+        # plant data, 0 = not set
+        **{
+            vol.Optional(key, default=0): vol.All(vol.Coerce(int), vol.Range(min=0))
+            for key in (CONF_MAX_OUTPUT_POWER, *(string_wp_key(n) for n in STRINGS))
+        },
     }
 )
 
@@ -62,6 +70,9 @@ class KostalRuntimeData:
     serial_number: str
     model: str
     monitored_conditions: list[str]
+    # installed power per string in Wp (0 = unused) and max. AC output in W (0 = not set)
+    string_wp: dict[int, int] = field(default_factory=dict)
+    max_output_power: int = 0
 
 
 type KostalConfigEntry = ConfigEntry[KostalRuntimeData]
@@ -108,6 +119,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
         serial_number=info.serial_number,
         model=info.model,
         monitored_conditions=conf[CONF_MONITORED_CONDITIONS],
+        string_wp={n: conf[string_wp_key(n)] for n in STRINGS},
+        max_output_power=conf[CONF_MAX_OUTPUT_POWER],
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

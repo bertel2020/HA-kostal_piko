@@ -75,9 +75,11 @@ Einstellungen → Geräte & Dienste → Integration hinzufügen → **Kostal Pik
 
 Danach folgt die Auswahl der **Sensoren**. Vorausgewählt ist alles, was dein Wechselrichter liefert (zum Beispiel nur die vorhandenen Strings und Phasen). Die Sensoren für den Eigenverbrauch (BA) sind nur vorausgewählt, wenn der Wechselrichter dafür Werte meldet. Die Sensoren sind in Gruppen geordnet (Leistung und Energie, Solargenerator, Netz, Eigenverbrauch). Nicht gewünschte kannst du abwählen.
 
+Der letzte Schritt **Anlagendaten** ist optional: die **installierte Leistung je String** in Wp und die **maximale Ausgangsleistung** (gedrosselte AC-Leistung) in W. Einen String, den du nicht nutzt (z. B. der dritte Eingang eines Drei-String-Wechselrichters), lässt du leer; er zählt dann als ungenutzt. Wenn du Werte einträgst, werden die Sensoren *Utilization* und *Specific yield* automatisch mit angelegt. Die Werte lassen sich später über **Konfigurieren** ändern (dort werden immer alle drei String-Felder angezeigt).
+
 Beim Speichern wird die Verbindung geprüft (inklusive Zugangsdaten). Ist der Wechselrichter nicht erreichbar oder sind die Zugangsdaten falsch, erscheint ein Fehler. Derselbe Wechselrichter kann nicht doppelt angelegt werden; als Kennung dient seine Seriennummer.
 
-Die Auswahl der Sensoren und das **Abfrageintervall** (10 bis 600 Sekunden, Standard 30) lassen sich später über den **Konfigurieren**-Button der Integration ändern. Die Integration lädt sich dann neu; vorhandene Sensoren behalten ihre Entity-IDs. Der Wechselrichter braucht etwa 1 Sekunde pro Seite und ist kein schneller Server; Werte unter 10 Sekunden sind nicht sinnvoll.
+Die Auswahl der Sensoren, die **Anlagendaten** und das **Abfrageintervall** (10 bis 600 Sekunden, Standard 30) lassen sich später über den **Konfigurieren**-Button der Integration ändern. Die Integration lädt sich dann neu; vorhandene Sensoren behalten ihre Entity-IDs. Der Wechselrichter braucht etwa 1 Sekunde pro Seite und ist kein schneller Server; Werte unter 10 Sekunden sind nicht sinnvoll.
 
 Host, Benutzername und Passwort lassen sich über ⋮ → **Neu konfigurieren** ändern, ohne die Integration zu löschen. Gehört die neue Adresse zu einem anderen Wechselrichter (andere Seriennummer), wird die Änderung abgelehnt. Entitäten und Verlauf bleiben erhalten.
 
@@ -103,6 +105,8 @@ Es wird ein **Gerät** (benannt nach dem Titel, Hersteller Kostal, Modell und Se
 | DC power | `sensor.kostal_piko_dc_power` | W | **Berechnet:** Summe der String-Leistungen |
 | Efficiency | `sensor.kostal_piko_efficiency` | % | **Berechnet:** AC-Leistung ÷ DC-Leistung |
 | Average power 15 min | `sensor.kostal_piko_average_power_15_min` | W | **Berechnet:** Mittelwert der AC-Leistung über die letzten 15 Minuten |
+| Utilization | `sensor.kostal_piko_utilization` | % | **Berechnet:** AC-Leistung in Prozent der maximalen Ausgangsleistung (Anlagendaten nötig) |
+| Specific yield | `sensor.kostal_piko_specific_yield` | kWh/kWp | **Berechnet:** Tagesertrag je installiertem kWp (Anlagendaten nötig) |
 
 Die Namen der Sensoren sind englisch, unabhängig von der Oberflächensprache. Die Entity-ID wird von Home Assistant einmalig bei der Erstanlage vergeben und danach beibehalten.
 
@@ -112,8 +116,10 @@ Die berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werden au
 
 - **String N power** = Spannung × Strom, auf ganze Watt gerundet. Hat der Wechselrichter weniger als drei Strings, ist der Wert „unbekannt“.
 - **DC power** = Summe der vorhandenen String-Leistungen.
-- **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet, **gemittelt über die letzten 5 Minuten**: Es wird die Summe der AC-Leistungen durch die Summe der DC-Leistungen geteilt, Zeiten mit hoher Leistung zählen also stärker. Ein einzelner Messwert ist ungenau, weil die Ströme auf 0,01 A gerundet sind und AC- und DC-Werte nicht im selben Moment gemessen werden (der Wert eines einzelnen Abrufs schwankt bei wechselnder Einstrahlung um mehrere Prozent). Ohne DC-Eingang (Standby) ist der Wert „unbekannt“ und nicht 0 %, damit Durchschnittswerte nicht verfälscht werden. Er wird erst 5 Minuten nach dem letzten Wert mit DC-Eingang unbekannt.
+- **Efficiency** = AC-Leistung ÷ DC-Leistung × 100, auf eine Nachkommastelle gerundet, **gemittelt über die letzten 5 Minuten**: Es wird die Summe der AC-Leistungen durch die Summe der DC-Leistungen geteilt, Zeiten mit hoher Leistung zählen also stärker. Ein einzelner Messwert ist ungenau, weil die Ströme auf 0,01 A gerundet sind und AC- und DC-Werte nicht im selben Moment gemessen werden (der Wert eines einzelnen Abrufs schwankt bei wechselnder Einstrahlung um mehrere Prozent). Ohne DC-Eingang (Standby, Nacht) ist der Wert 0 %. Er springt erst 5 Minuten nach dem letzten Wert mit DC-Eingang auf 0 %.
 - **Average power 15 min** = Mittelwert der abgefragten AC-Leistung der letzten 15 Minuten, auf ganze Watt gerundet. Er entspricht einem Statistik-Helfer (Mittelwert, 15 Minuten) auf `current_power` und ersetzt ihn. Der letzte Wert bleibt auch bei längerer Pause erhalten.
+- **Utilization** = AC-Leistung ÷ maximale Ausgangsleistung × 100, auf eine Nachkommastelle gerundet. Ohne eingetragene maximale Ausgangsleistung ist der Wert „unbekannt“.
+- **Specific yield** = Tagesertrag ÷ installierte Leistung in kWp (Summe der eingetragenen String-Werte), auf zwei Nachkommastellen gerundet. Strings ohne Wert zählen nicht mit; ohne jeden Wert ist der Sensor „unbekannt“.
 
 ### Diagnose
 

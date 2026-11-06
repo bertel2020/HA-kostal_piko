@@ -75,9 +75,11 @@ Settings → Devices & Services → Add Integration → **Kostal Piko**.
 
 The next step is the choice of **sensors**. Everything your inverter provides is preselected (for example only the strings and phases that exist). The own-consumption (BA) sensors are only preselected if the inverter reports values for them. The sensors are grouped (power and energy, solar generator, grid, own consumption). Deselect what you do not want.
 
+The last step, **Plant data**, is optional: the **installed power per string** in Wp and the **maximum output power** (throttled AC power) in W. Leave a string you do not use empty (e.g. the third input of a three-string inverter); it then counts as unused. If you enter values, the *Utilization* and *Specific yield* sensors are created automatically. You can change the values later via **Configure** (all three string fields are always shown there).
+
 The connection (including the credentials) is checked when saving. If the inverter is unreachable or the credentials are wrong, an error is shown. The same inverter cannot be added twice; its serial number is used as identifier.
 
-The selection of sensors and the **update interval** (10 to 600 seconds, default 30) can be changed later with the **Configure** button of the integration. The integration then reloads; existing sensors keep their entity IDs. The inverter needs about 1 second per page and is not a fast server; values below 10 seconds make no sense.
+The selection of sensors, the **plant data** and the **update interval** (10 to 600 seconds, default 30) can be changed later with the **Configure** button of the integration. The integration then reloads; existing sensors keep their entity IDs. The inverter needs about 1 second per page and is not a fast server; values below 10 seconds make no sense.
 
 Host, username and password can be changed via ⋮ → **Reconfigure** without deleting the integration. If the new address belongs to a different inverter (different serial number) the change is rejected. Entities and history are kept.
 
@@ -102,6 +104,8 @@ One **device** (named after the title, manufacturer Kostal, model and serial num
 | String 1/2/3 power | `sensor.kostal_piko_string_1_power` … | W | **Calculated:** voltage × current per string |
 | DC power | `sensor.kostal_piko_dc_power` | W | **Calculated:** sum of the string powers |
 | Efficiency | `sensor.kostal_piko_efficiency` | % | **Calculated:** AC power ÷ DC power |
+| Utilization | `sensor.kostal_piko_utilization` | % | **Calculated:** AC power in percent of the maximum output power (plant data required) |
+| Specific yield | `sensor.kostal_piko_specific_yield` | kWh/kWp | **Calculated:** daily energy per installed kWp (plant data required) |
 
 Sensor names are in English regardless of the UI language. Home Assistant assigns the entity ID once when the entity is first created and keeps it afterwards.
 
@@ -111,8 +115,10 @@ The three calculated values do not come directly from the inverter but are deriv
 
 - **String N power** = voltage × current, rounded to whole watts. If the inverter has fewer than three strings the value is "unknown".
 - **DC power** = sum of the existing string powers.
-- **Efficiency** = AC power ÷ DC power × 100, rounded to one decimal, **averaged over the last 5 minutes**: the sum of the AC powers is divided by the sum of the DC powers, so periods with high power count more. A single reading is imprecise because the currents are rounded to 0.01 A and the AC and DC values are not measured at the same moment (the value of a single poll varies by several percent when the irradiation changes). Without DC input (standby) the value is "unknown" rather than 0 %, so averages are not skewed. It becomes unknown 5 minutes after the last value with DC input.
+- **Efficiency** = AC power ÷ DC power × 100, rounded to one decimal, **averaged over the last 5 minutes**: the sum of the AC powers is divided by the sum of the DC powers, so periods with high power count more. A single reading is imprecise because the currents are rounded to 0.01 A and the AC and DC values are not measured at the same moment (the value of a single poll varies by several percent when the irradiation changes). Without DC input (standby, night) the value is 0 %. It drops to 0 % 5 minutes after the last value with DC input.
 - **Average power 15 min** = mean of the polled AC power over the last 15 minutes, rounded to whole watts. It matches a statistics helper (mean, 15 minutes) on `current_power` and can replace it. The latest value is kept even after a longer pause.
+- **Utilization** = AC power ÷ maximum output power × 100, rounded to one decimal. Without a maximum output power the value is "unknown".
+- **Specific yield** = daily energy ÷ installed power in kWp (sum of the string values you entered), rounded to two decimals. Strings without a value do not count; with no value at all the sensor is "unknown".
 
 ### Diagnostics
 

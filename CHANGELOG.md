@@ -5,6 +5,16 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
+## Unveröffentlicht
+
+**Neu**
+- **Schritt „Anlagendaten“** in Einrichtung und unter **Konfigurieren** (optional): installierte Leistung je String in Wp und maximale (gedrosselte) Ausgangsleistung in W. Ein leerer String gilt als ungenutzt.
+- **Sensor „Utilization“** (`sensor.kostal_piko_utilization`): AC-Leistung in Prozent der maximalen Ausgangsleistung.
+- **Sensor „Specific yield“** (`sensor.kostal_piko_specific_yield`): Tagesertrag in kWh je installiertem kWp.
+
+**Geändert**
+- **Wirkungsgrad ist ohne DC-Leistung 0 %** statt „unbekannt“ (Nacht, Standby).
+
 ## 2.3.0 – 2026-11-04
 
 **Neu**

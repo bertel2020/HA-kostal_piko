@@ -63,6 +63,22 @@
           "username": "Username",
           "password": "Password"
         }
+      },
+      "plant": {
+        "title": "Plant data",
+        "description": "Optional. Enter the installed power of each string that is in use; leave unused strings empty. The maximum output power is the throttled AC power your inverter may feed in. The values are used for the utilization and specific yield sensors and for cards. Both can be changed later via Configure.",
+        "data": {
+          "string1_power_wp": "String 1 installed power",
+          "string2_power_wp": "String 2 installed power",
+          "string3_power_wp": "String 3 installed power",
+          "max_output_power": "Maximum output power"
+        },
+        "data_description": {
+          "string1_power_wp": "Module power of string 1 in Wp. Empty means the string is unused.",
+          "string2_power_wp": "Module power of string 2 in Wp. Empty means the string is unused.",
+          "string3_power_wp": "Module power of string 3 in Wp. Empty means the string is unused.",
+          "max_output_power": "Maximum AC power in W, e.g. 7000 for a throttled 10 kW inverter. Empty means not set."
+        }
       }
     },
     "error": {
@@ -84,7 +100,11 @@
         "title": "Kostal Piko",
         "description": "Choose the sensors that are created and how often the inverter is read. The inverter needs about 1 s per page, so values below 10 s make no sense.",
         "data": {
-          "scan_interval": "Update interval (seconds)"
+          "scan_interval": "Update interval (seconds)",
+          "string1_power_wp": "String 1 installed power",
+          "string2_power_wp": "String 2 installed power",
+          "string3_power_wp": "String 3 installed power",
+          "max_output_power": "Maximum output power"
         },
         "sections": {
           "power": {
@@ -111,6 +131,12 @@
               "monitored_conditions": "Sensors"
             }
           }
+        },
+        "data_description": {
+          "string1_power_wp": "Module power of string 1 in Wp. Empty means the string is unused.",
+          "string2_power_wp": "Module power of string 2 in Wp. Empty means the string is unused.",
+          "string3_power_wp": "Module power of string 3 in Wp. Empty means the string is unused.",
+          "max_output_power": "Maximum AC power in W, e.g. 7000 for a throttled 10 kW inverter. Empty means not set."
         }
       }
     }
@@ -194,6 +220,12 @@
       },
       "average_power_15min": {
         "name": "Average power 15 min"
+      },
+      "utilization": {
+        "name": "Utilization"
+      },
+      "specific_yield": {
+        "name": "Specific yield"
       }
     }
   }

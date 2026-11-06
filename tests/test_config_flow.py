@@ -64,6 +64,10 @@ async def test_user_flow_creates_entry(hass, fake_piko):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], _nested(["current_power", "efficiency"])
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "plant"
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "kostal_piko"
     assert result["data"]["host"] == "http://192.168.1.50"
@@ -334,3 +338,47 @@ async def test_sensor_labels_are_translated_by_the_flow(hass, fake_piko):
     assert options["current_power"] == "Aktuelle Leistung"
     assert options["string1_power"] == "String 1 Leistung"
     assert options["efficiency"] == "Wirkungsgrad"
+
+
+async def test_plant_data_is_stored_and_adds_derived_sensors(hass, fake_piko):
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CONNECTION
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], _nested(["current_power"])
+    )
+    assert result["step_id"] == "plant"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {"string1_power_wp": 5000.0, "string2_power_wp": 3000.0, "max_output_power": 7000.0},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    data = result["data"]
+    # string 3 is unused: empty field is stored as 0
+    assert data["string1_power_wp"] == 5000
+    assert data["string2_power_wp"] == 3000
+    assert data["string3_power_wp"] == 0
+    assert data["max_output_power"] == 7000
+    assert data["monitored_conditions"] == ["current_power", "utilization", "specific_yield"]
+
+
+async def test_options_flow_stores_plant_data(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="SN123", title="kostal_piko", data=USER_INPUT
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            **_nested(["current_power"]),
+            "scan_interval": 30,
+            "string1_power_wp": 4000.0,
+            "max_output_power": 7000.0,
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["string1_power_wp"] == 4000
+    assert entry.options["string2_power_wp"] == 0
+    assert entry.options["max_output_power"] == 7000

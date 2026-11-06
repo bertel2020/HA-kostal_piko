@@ -3,6 +3,8 @@ from custom_components.kostal.calculations import (
     dc_power,
     string_power,
     mean_power,
+    specific_yield,
+    utilization,
     windowed_efficiency,
 )
 
@@ -52,3 +54,17 @@ def test_mean_power_is_rounded():
 
 def test_mean_power_without_samples_is_unknown():
     assert mean_power([]) is None
+
+
+def test_utilization_is_ac_power_in_percent_of_the_maximum():
+    assert utilization(3500, 7000) == 50.0
+    assert utilization(0, 7000) == 0.0
+    assert utilization(3500, 0) is None
+    assert utilization(None, 7000) is None
+
+
+def test_specific_yield_ignores_unused_strings():
+    # string 3 unused (0): 12 kWh on 5 + 3 kWp
+    assert specific_yield(12, [5000, 3000, 0]) == 1.5
+    assert specific_yield(12, [0, 0, 0]) is None
+    assert specific_yield(None, [5000]) is None

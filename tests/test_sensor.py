@@ -432,3 +432,34 @@ async def test_unknown_page_layout_is_retried_with_a_clear_message(
     assert entry.state is ConfigEntryState.SETUP_RETRY
     assert "Unsupported page layout" in caplog.text
     assert "not reachable" not in caplog.text
+
+
+async def test_utilization_and_specific_yield(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="kostal_piko",
+        data={
+            "host": "http://192.168.1.50",
+            "username": "pvserver",
+            "password": "pvwr",
+            "monitored_conditions": ["utilization", "specific_yield"],
+            "string1_power_wp": 5000,
+            "string2_power_wp": 3000,
+            "max_output_power": 680,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.kostal_piko_utilization").state == "50.0"  # 340 / 680
+    assert hass.states.get("sensor.kostal_piko_specific_yield").state == "0.04"  # 0.3 / 8 kWp
+
+
+async def test_utilization_is_unknown_without_plant_data(hass, fake_piko):
+    entry = _entry()
+    entry.data["monitored_conditions"].append("utilization")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.kostal_piko_utilization").state == "unknown"

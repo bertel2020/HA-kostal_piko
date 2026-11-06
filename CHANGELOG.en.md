@@ -5,6 +5,16 @@
 All notable changes to this project are documented here.
 Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 
+## Unreleased
+
+**New**
+- **"Plant data" step** in setup and under **Configure** (optional): installed power per string in Wp and maximum (throttled) output power in W. An empty string counts as unused.
+- **Sensor "Utilization"** (`sensor.kostal_piko_utilization`): AC power in percent of the maximum output power.
+- **Sensor "Specific yield"** (`sensor.kostal_piko_specific_yield`): daily energy in kWh per installed kWp.
+
+**Changed**
+- **Efficiency is 0 % without DC power** instead of "unknown" (night, standby).
+
 ## 2.3.0 – 2026-11-04
 
 **New**
