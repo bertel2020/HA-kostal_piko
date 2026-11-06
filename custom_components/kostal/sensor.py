@@ -95,6 +95,16 @@ class PikoSensor(CoordinatorEntity[KostalCoordinator], SensorEntity):
         return self._object_id
 
     @property
+    def extra_state_attributes(self) -> dict | None:
+        """Give the card the plant data: it hides strings without installed power."""
+        if self.type in ("string1_power", "string2_power", "string3_power"):
+            wp = self._runtime.string_wp.get(int(self.type[6]))
+            return {"installed_power": wp} if wp else None
+        if self.type in ("utilization", "current_power") and self._runtime.max_output_power:
+            return {"max_output_power": self._runtime.max_output_power}
+        return None
+
+    @property
     def native_value(self):
         """Return the value of the sensor."""
         if self.type == "efficiency":  # averaged over several polls

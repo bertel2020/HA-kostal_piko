@@ -5,6 +5,15 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
+## Unveröffentlicht
+
+**Neu**
+- **Eigene Lovelace-Karte** `custom:kostal-piko-card`: Ring, Kennzahlen, Verlauf, Strings und Phasen, mit Optionen für Hauptanzeige, Farbe, Blöcke und Details. Die Integration lädt sie selbst. Strings ohne installierte Leistung werden ausgeblendet.
+- Die String-Leistungssensoren tragen das Attribut `installed_power`, *Current power* und *Utilization* das Attribut `max_output_power` (nur mit Anlagendaten).
+
+**Geändert**
+- Die Integration hängt jetzt von `frontend` und `http` ab (für die Karte).
+
 ## 2.4.0 – 2026-11-06
 
 **Neu**

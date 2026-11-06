@@ -463,3 +463,43 @@ async def test_utilization_is_unknown_without_plant_data(hass, fake_piko):
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get("sensor.kostal_piko_utilization").state == "unknown"
+
+
+async def test_card_gets_the_plant_data_as_attributes(hass, fake_piko):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="kostal_piko",
+        data={
+            "host": "http://192.168.1.50",
+            "username": "pvserver",
+            "password": "pvwr",
+            "monitored_conditions": ["current_power", "string1_power", "string2_power", "utilization"],
+            "string1_power_wp": 5000,
+            "max_output_power": 7000,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    string1 = hass.states.get("sensor.kostal_piko_string_1_power")
+    assert string1.attributes["installed_power"] == 5000
+    # string 2 has no installed power: unused, no attribute
+    assert "installed_power" not in hass.states.get("sensor.kostal_piko_string_2_power").attributes
+    for name in ("current_power", "utilization"):
+        assert hass.states.get(f"sensor.kostal_piko_{name}").attributes["max_output_power"] == 7000
+
+
+async def test_lovelace_card_is_served(hass, hass_client, fake_piko):
+    from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
+
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    client = await hass_client()
+    response = await client.get("/kostal/kostal-piko-card.js")
+    assert response.status == 200
+    assert "kostal-piko-card" in await response.text()
+    assert any("/kostal/kostal-piko-card.js" in url for url in hass.data[DATA_EXTRA_MODULE_URL].urls)

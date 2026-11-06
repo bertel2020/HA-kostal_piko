@@ -121,6 +121,29 @@ Die berechneten Werte stammen nicht direkt vom Wechselrichter, sondern werden au
 - **Utilization** = AC-Leistung ÷ maximale Ausgangsleistung × 100, auf eine Nachkommastelle gerundet. Ohne eingetragene maximale Ausgangsleistung ist der Wert „unbekannt“.
 - **Specific yield** = Tagesertrag ÷ installierte Leistung in kWp (Summe der eingetragenen String-Werte), auf zwei Nachkommastellen gerundet. Strings ohne Wert zählen nicht mit; ohne jeden Wert ist der Sensor „unbekannt“.
 
+### Lovelace-Karte
+
+Die Integration bringt eine eigene Karte mit und lädt sie automatisch, du musst keine Ressource eintragen. Falls sie nach einem Update nicht erscheint, einmal den Browser-Cache leeren oder die Seite hart neu laden.
+
+```yaml
+type: custom:kostal-piko-card
+```
+
+Die Karte zeigt die aktuelle Leistung als Ring (Maximum ist die eingetragene maximale Ausgangsleistung), Kennzahlen, den Leistungsverlauf, die Strings als Anteil an ihrer installierten Leistung und die Phasen. Strings ohne eingetragene Leistung (Wp) werden ausgeblendet, sobald für mindestens einen String eine Leistung eingetragen ist (siehe **Anlagendaten**). Ohne Anlagendaten werden alle Strings im Verhältnis zueinander angezeigt.
+
+| Option | Standard | Beschreibung |
+|---|---|---|
+| `prefix` | `sensor.kostal_piko` | Präfix der Entity-IDs; bei anderem Titel anpassen |
+| `main` | `ring` | Hauptanzeige: `ring`, `bar` oder `number` |
+| `color` | `amber` | `amber`, `teal`, `blue`, `purple`, `green` oder eine CSS-Farbe |
+| `show` | alle | Liste aus `kpis`, `history`, `strings`, `phases` |
+| `details` | `false` | Spannung und Strom bei Strings und Phasen |
+| `history_hours` | `24` | Zeitraum des Verlaufs in Stunden |
+| `max_power` | `10000` | Maximum des Rings, wenn keine maximale Ausgangsleistung eingetragen ist |
+| `name` | `Kostal Piko` | Titel der Karte |
+
+Blöcke, deren Sensoren nicht angelegt sind (z. B. der Wirkungsgrad), erscheinen nicht.
+
 ### Diagnose
 
 Unter Einstellungen → Geräte & Dienste → Kostal Piko → ⋮ → **Diagnose herunterladen** gibt es eine JSON-Datei mit dem Zustand der Integration und den aktuellen Sensorwerten. Host, Benutzername, Passwort und Seriennummer sind darin geschwärzt. Sie eignet sich gut für Fehlermeldungen.

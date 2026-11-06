@@ -1,11 +1,14 @@
 """The Kostal PIKO inverter sensor integration."""
 
 import logging
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import timedelta
 
 import voluptuous as vol
 
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
@@ -25,6 +28,7 @@ from .const import (
     CONF_MAX_OUTPUT_POWER,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
     SENSOR_TYPES,
@@ -38,6 +42,11 @@ _LOGGER = logging.getLogger(__name__)
 __version__ = "2.4.0"
 
 PLATFORMS = ["sensor"]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+CARD_URL = f"/{DOMAIN}/kostal-piko-card.js"
+CARD_FILE = Path(__file__).parent / "www" / "kostal-piko-card.js"
 
 # Validates data and options of a config entry (older entries may still
 # carry a name).
@@ -76,6 +85,16 @@ class KostalRuntimeData:
 
 
 type KostalConfigEntry = ConfigEntry[KostalRuntimeData]
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Serve the Lovelace card of the integration and load it in the frontend."""
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_URL, str(CARD_FILE), cache_headers=False)]
+    )
+    # the version in the URL makes browsers load a new card after an update
+    add_extra_js_url(hass, f"{CARD_URL}?v={__version__}")
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bool:

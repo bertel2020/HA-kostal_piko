@@ -120,6 +120,29 @@ The three calculated values do not come directly from the inverter but are deriv
 - **Utilization** = AC power ÷ maximum output power × 100, rounded to one decimal. Without a maximum output power the value is "unknown".
 - **Specific yield** = daily energy ÷ installed power in kWp (sum of the string values you entered), rounded to two decimals. Strings without a value do not count; with no value at all the sensor is "unknown".
 
+### Lovelace card
+
+The integration ships its own card and loads it automatically, you do not have to add a resource. If it does not show up after an update, clear the browser cache or hard-reload the page.
+
+```yaml
+type: custom:kostal-piko-card
+```
+
+The card shows the current power as a ring (the maximum is the configured maximum output power), key figures, the power history, the strings as a share of their installed power and the phases. Strings without installed power (Wp) are hidden as soon as at least one string has a value (see **Plant data**). Without plant data all strings are shown relative to each other.
+
+| Option | Default | Description |
+|---|---|---|
+| `prefix` | `sensor.kostal_piko` | Prefix of the entity IDs; change it if your title differs |
+| `main` | `ring` | Main display: `ring`, `bar` or `number` |
+| `color` | `amber` | `amber`, `teal`, `blue`, `purple`, `green` or a CSS color |
+| `show` | all | List of `kpis`, `history`, `strings`, `phases` |
+| `details` | `false` | Voltage and current for strings and phases |
+| `history_hours` | `24` | Period of the history in hours |
+| `max_power` | `10000` | Maximum of the ring if no maximum output power is set |
+| `name` | `Kostal Piko` | Title of the card |
+
+Blocks whose sensors are not created (e.g. efficiency) are not shown.
+
 ### Diagnostics
 
 Under Settings → Devices & Services → Kostal Piko → ⋮ → **Download diagnostics** you get a JSON file with the state of the integration and the current sensor values. Host, username, password and serial number are redacted. It is well suited for bug reports.
