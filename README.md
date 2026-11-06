@@ -142,6 +142,8 @@ Die Karte zeigt die aktuelle Leistung als Ring (Maximum ist die eingetragene max
 | `max_power` | `10000` | Maximum des Rings, wenn keine maximale Ausgangsleistung eingetragen ist |
 | `name` | `Kostal Piko` | Titel der Karte |
 
+Alle Optionen lassen sich auch im **visuellen Editor** der Karte einstellen (Entity-Auswahl, Hauptanzeige, Farbe, Blöcke, Details). Eine freie CSS-Farbe geht nur in YAML. Im Leistungsverlauf zeigt der Mauszeiger (oder Fingertipp) Zeit und Leistung des nächsten Messpunkts.
+
 Blöcke, deren Sensoren nicht angelegt sind (z. B. der Wirkungsgrad), erscheinen nicht.
 
 ### Diagnose

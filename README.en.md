@@ -141,6 +141,8 @@ The card shows the current power as a ring (the maximum is the configured maximu
 | `max_power` | `10000` | Maximum of the ring if no maximum output power is set |
 | `name` | `Kostal Piko` | Title of the card |
 
+All options can also be set in the card's **visual editor** (entity picker, main display, color, blocks, details). A free CSS color works only in YAML. In the power history, hovering (or tapping) shows the time and power of the nearest data point.
+
 Blocks whose sensors are not created (e.g. efficiency) are not shown.
 
 ### Diagnostics

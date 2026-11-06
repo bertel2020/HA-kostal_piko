@@ -5,6 +5,12 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
+## 2.6.0 – 2026-11-06
+
+**Neu**
+- **Visueller Editor** für die Lovelace-Karte: Entity-Auswahl, Hauptanzeige, Farbe, Blöcke, Details, Verlaufsdauer und Ring-Maximum.
+- **Mouseover im Leistungsverlauf:** Cursorlinie, Punkt und Tooltip mit Zeit und Leistung (auch per Fingertipp).
+
 ## 2.5.0 – 2026-11-06
 
 **Neu**

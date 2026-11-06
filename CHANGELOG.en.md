@@ -5,6 +5,12 @@
 All notable changes to this project are documented here.
 Versions follow the `version` field in `custom_components/kostal/manifest.json`.
 
+## 2.6.0 – 2026-11-06
+
+**New**
+- **Visual editor** for the Lovelace card: entity picker, main display, color, blocks, details, history period and ring maximum.
+- **Mouseover in the power history:** cursor line, dot and tooltip with time and power (also by tap).
+
 ## 2.5.0 – 2026-11-06
 
 **New**

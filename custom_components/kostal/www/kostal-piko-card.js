@@ -83,6 +83,10 @@ class KostalPikoCard extends HTMLElement {
     return { type: "custom:kostal-piko-card" };
   }
 
+  static getConfigElement() {
+    return document.createElement("kostal-piko-card-editor");
+  }
+
   _t(key) {
     const lang = (this._hass?.language || "en").startsWith("de") ? "de" : "en";
     return TEXT[lang][key];
@@ -193,17 +197,74 @@ class KostalPikoCard extends HTMLElement {
   }
 
   _historyBlock(color) {
-    if (this._history.length < 2) return "";
+    if (this._history.length < 2) {
+      this._chart = null;
+      return "";
+    }
     const end = Date.now();
     const start = this._historyStart || end - this._config.history_hours * 3600 * 1000;
     const max = Math.max(...this._history.map((p) => p.v), 1);
-    const points = this._history
-      .map((p) => `${(((p.t - start) / (end - start)) * 300).toFixed(1)},${(46 - (Math.max(p.v, 0) / max) * 42).toFixed(1)}`)
-      .join(" ");
+    const x = (t) => ((t - start) / (end - start)) * 100;
+    const y = (v) => ((46 - (Math.max(v, 0) / max) * 42) / 50) * 100;
+    this._chart = { points: this._history, start, end, x, y };
+    const line = this._history.map((p) => `${(x(p.t) * 3).toFixed(1)},${(y(p.v) / 2).toFixed(1)}`).join(" ");
+    const time = (t) => new Date(t).toLocaleTimeString(this._hass?.language, { hour: "2-digit", minute: "2-digit" });
     return `<div class="section"><div class="label">${esc(this._t("history"))}</div>
-      <svg viewBox="0 0 300 50" preserveAspectRatio="none" class="spark" role="img" aria-label="${esc(this._t("history"))}">
-        <polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" points="${points}"/>
-      </svg></div>`;
+      <div class="chart">
+        <svg viewBox="0 0 300 50" preserveAspectRatio="none" class="spark" role="img" aria-label="${esc(this._t("history"))}">
+          <polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" points="${line}"/>
+        </svg>
+        <div class="cursor" hidden></div>
+        <div class="dot" hidden style="background:${color}"></div>
+        <div class="tip" hidden></div>
+      </div>
+      <div class="axis"><span>${esc(time(start))}</span><span>${esc(time(end))}</span></div></div>`;
+  }
+
+  _bindChart() {
+    const chart = this.shadowRoot.querySelector(".chart");
+    if (!chart || !this._chart) return;
+    const move = (event) => {
+      const rect = chart.getBoundingClientRect();
+      if (!rect.width) return;
+      const { points, start, end } = this._chart;
+      const t = start + Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1) * (end - start);
+      this._hover = points.reduce((best, p) => (Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best));
+      this._applyHover();
+    };
+    const leave = () => {
+      this._hover = null;
+      this._applyHover();
+    };
+    chart.addEventListener("pointermove", move);
+    chart.addEventListener("pointerdown", move);
+    chart.addEventListener("pointerleave", leave);
+    chart.addEventListener("pointercancel", leave);
+  }
+
+  _applyHover() {
+    const root = this.shadowRoot;
+    const cursor = root.querySelector(".cursor");
+    const dot = root.querySelector(".dot");
+    const tip = root.querySelector(".tip");
+    if (!cursor || !dot || !tip) return;
+    const point = this._hover;
+    const chart = this._chart;
+    if (!point || !chart || point.t < chart.start) {
+      cursor.hidden = dot.hidden = tip.hidden = true;
+      return;
+    }
+    const left = chart.x(point.t);
+    const when = new Date(point.t).toLocaleString(this._hass?.language, {
+      weekday: "short", hour: "2-digit", minute: "2-digit",
+    });
+    cursor.style.left = dot.style.left = `${left}%`;
+    dot.style.top = `${chart.y(point.v)}%`;
+    tip.innerHTML = `<b>${esc(this._power(point.v))}</b><span>${esc(when)}</span>`;
+    // keep the tooltip inside the card: flip it on the right half
+    tip.style.left = `${left}%`;
+    tip.style.transform = left > 55 ? "translateX(calc(-100% - 8px))" : "translateX(8px)";
+    cursor.hidden = dot.hidden = tip.hidden = false;
   }
 
   _stringsBlock(color) {
@@ -285,7 +346,14 @@ class KostalPikoCard extends HTMLElement {
       .value { font-size: 15px; font-weight: 500; color: var(--primary-text-color); }
       .section { border-top: 1px solid var(--divider-color); margin-top: 12px; padding-top: 12px; }
       .section .label { margin-bottom: 8px; }
+      .chart { position: relative; touch-action: none; cursor: crosshair; }
       .spark { width: 100%; height: 50px; display: block; }
+      .cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--secondary-text-color); opacity: 0.5; pointer-events: none; }
+      .dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
+      .tip { position: absolute; top: -4px; display: flex; flex-direction: column; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; pointer-events: none;
+        background: var(--card-background-color, #fff); color: var(--primary-text-color); border: 1px solid var(--divider-color); }
+      .tip span { font-size: 11px; color: var(--secondary-text-color); }
+      .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--secondary-text-color); margin-top: 2px; }
       .rows { display: grid; gap: 8px; }
       .row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--primary-text-color); }
       .name { width: 58px; flex: 0 0 auto; }
@@ -310,7 +378,105 @@ class KostalPikoCard extends HTMLElement {
       ${show.includes("phases") ? this._phasesBlock() : ""}
       ${total}`}
     </ha-card>`;
+    this._bindChart();
+    this._applyHover();
   }
+}
+
+const EDITOR_TEXT = {
+  en: {
+    name: "Title", entity: "Inverter (current power sensor)", main: "Main display", color: "Color",
+    show: "Blocks", details: "Voltage and current", history_hours: "History (hours)",
+    max_power: "Ring maximum (W), if no maximum output power is set",
+    ring: "Ring", bar: "Bar", number: "Number", amber: "Amber", teal: "Teal", blue: "Blue",
+    purple: "Purple", green: "Green", kpis: "Key figures", history: "History", strings: "Strings", phases: "Phases",
+  },
+  de: {
+    name: "Titel", entity: "Wechselrichter (Sensor Aktuelle Leistung)", main: "Hauptanzeige", color: "Farbe",
+    show: "Blöcke", details: "Spannung und Strom", history_hours: "Verlauf (Stunden)",
+    max_power: "Maximum des Rings (W), wenn keine maximale Ausgangsleistung gesetzt ist",
+    ring: "Ring", bar: "Balken", number: "Zahl", amber: "Amber", teal: "Türkis", blue: "Blau",
+    purple: "Violett", green: "Grün", kpis: "Kennzahlen", history: "Verlauf", strings: "Strings", phases: "Phasen",
+  },
+};
+const POWER_SUFFIX = "_current_power";
+
+class KostalPikoCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  _t(key) {
+    return EDITOR_TEXT[(this._hass?.language || "en").startsWith("de") ? "de" : "en"][key];
+  }
+
+  _schema() {
+    const options = (keys) => keys.map((value) => ({ value, label: this._t(value) }));
+    const colors = Object.keys(COLORS);
+    const color = this._config.color;
+    const colorOptions = options(colors);
+    // a custom CSS color from YAML stays selectable
+    if (color && !colors.includes(color)) colorOptions.push({ value: color, label: color });
+    const sensors = Object.keys(this._hass?.states || {}).filter(
+      (id) => id.startsWith("sensor.") && id.endsWith(POWER_SUFFIX)
+    );
+    return [
+      { name: "name", selector: { text: {} } },
+      { name: "entity", selector: { entity: { include_entities: sensors } } },
+      { name: "main", selector: { select: { mode: "box", options: options(["ring", "bar", "number"]) } } },
+      { name: "color", selector: { select: { mode: "dropdown", options: colorOptions } } },
+      { name: "show", selector: { select: { multiple: true, mode: "list", options: options(BLOCKS) } } },
+      { name: "details", selector: { boolean: {} } },
+      { name: "history_hours", selector: { number: { min: 1, max: 168, mode: "box" } } },
+      { name: "max_power", selector: { number: { min: 0, max: 1000000, step: 100, mode: "box", unit_of_measurement: "W" } } },
+    ];
+  }
+
+  _data() {
+    const c = this._config;
+    return {
+      name: c.name || "Kostal Piko",
+      entity: `${c.prefix || "sensor.kostal_piko"}${POWER_SUFFIX}`,
+      main: c.main || "ring",
+      color: c.color || "amber",
+      show: c.show === undefined ? BLOCKS : c.show,
+      details: Boolean(c.details),
+      history_hours: c.history_hours || 24,
+      max_power: c.max_power || 10000,
+    };
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.computeLabel = (schema) => this._t(schema.name);
+      this._form.addEventListener("value-changed", (event) => this._changed(event.detail.value));
+      this.append(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.schema = this._schema();
+    this._form.data = this._data();
+  }
+
+  _changed(value) {
+    const { entity, ...rest } = value;
+    const config = { ...this._config, ...rest };
+    if (entity && entity.endsWith(POWER_SUFFIX)) {
+      config.prefix = entity.slice(0, -POWER_SUFFIX.length);
+    }
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
+  }
+}
+
+if (!customElements.get("kostal-piko-card-editor")) {
+  customElements.define("kostal-piko-card-editor", KostalPikoCardEditor);
 }
 
 if (!customElements.get("kostal-piko-card")) {
