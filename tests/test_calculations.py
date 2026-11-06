@@ -40,9 +40,9 @@ def test_windowed_efficiency_is_power_weighted():
     assert windowed_efficiency(samples) == 90.8  # (900+99) / (1000+100)
 
 
-def test_windowed_efficiency_without_dc_is_unknown():
-    assert windowed_efficiency([]) is None
-    assert windowed_efficiency([(0, 0)]) is None
+def test_windowed_efficiency_without_dc_is_zero():
+    assert windowed_efficiency([]) == 0
+    assert windowed_efficiency([(0, 0)]) == 0
 
 
 def test_mean_power_is_rounded():

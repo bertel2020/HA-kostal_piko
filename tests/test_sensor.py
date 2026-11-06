@@ -297,7 +297,7 @@ async def test_efficiency_is_averaged_over_five_minutes(hass, fake_piko, freezer
     assert hass.states.get(entity).state == "89.7"  # only 540 / 602 remain
 
 
-async def test_efficiency_unknown_in_standby_after_the_window(hass, fake_piko, freezer):
+async def test_efficiency_is_zero_in_standby_after_the_window(hass, fake_piko, freezer):
     from datetime import timedelta
 
     entry = await _setup(hass)
@@ -318,7 +318,7 @@ async def test_efficiency_unknown_in_standby_after_the_window(hass, fake_piko, f
     freezer.tick(timedelta(minutes=5, seconds=1))
     await coordinator.async_refresh()
     await hass.async_block_till_done()
-    assert hass.states.get(entity).state == "unknown"
+    assert hass.states.get(entity).state == "0.0"
 
 
 async def test_average_power_over_fifteen_minutes(hass, fake_piko, freezer):

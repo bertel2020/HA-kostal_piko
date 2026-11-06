@@ -55,7 +55,7 @@ class KostalCoordinator(DataUpdateCoordinator):
         self._power_samples: deque = deque()
 
     @property
-    def efficiency(self) -> float | None:
+    def efficiency(self) -> float:
         """Efficiency in percent, averaged over the last EFFICIENCY_WINDOW."""
         return windowed_efficiency([(ac, dc) for _, ac, dc in self._samples])
 

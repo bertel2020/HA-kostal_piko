@@ -22,18 +22,20 @@ def dc_power(data) -> int | None:
     return sum(powers) if powers else None
 
 
-def windowed_efficiency(samples) -> float | None:
+def windowed_efficiency(samples) -> float:
     """Return the efficiency in percent over several (AC, DC) power samples.
 
     The sum of the AC powers is divided by the sum of the DC powers, so a
     sample with a high power counts more than one with a low power. A single
     snapshot is imprecise: the currents are rounded to 0.01 A and the AC and
     DC values are not measured at exactly the same moment.
+
+    Without DC power (night, standby) the efficiency is 0 %.
     """
     ac = sum(sample[0] for sample in samples)
     dc = sum(sample[1] for sample in samples)
     if dc <= 0:
-        return None
+        return 0.0
     return round(ac / dc * 100, 1)
 
 
