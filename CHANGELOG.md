@@ -5,7 +5,7 @@
 Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
 
-## Unveröffentlicht
+## 2.5.0 – 2026-11-06
 
 **Neu**
 - **Eigene Lovelace-Karte** `custom:kostal-piko-card`: Ring, Kennzahlen, Verlauf, Strings und Phasen, mit Optionen für Hauptanzeige, Farbe, Blöcke und Details. Die Integration lädt sie selbst. Strings ohne installierte Leistung werden ausgeblendet.
