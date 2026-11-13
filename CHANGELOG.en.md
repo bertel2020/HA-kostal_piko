@@ -2,8 +2,16 @@
 
 *[🇩🇪 Deutsche Version](CHANGELOG.md)*
 
-All notable changes to this project are documented here.
-Versions follow the `version` field in `custom_components/kostal/manifest.json`.
+## 2.6.1 – 2026-11-13
+
+**Fixed**
+- **Card:** it only re-renders when its own entities change; the tooltip in the history no longer freezes.
+- **Card:** on touch devices the dashboard can be scrolled again across the history.
+- **Card:** the color is escaped. Cleared fields in the editor fall back to the defaults instead of breaking the card.
+- **Credentials:** the password is masked when changing the connection and when signing in again. It is no longer pre-filled when changing the connection.
+- **Sensors:** deselected sensors no longer stay behind as orphaned entities.
+- **Consumption sensors:** if the BA page keeps failing, they become unknown after the usual time instead of keeping the last value.
+- **Host:** an entry without `http://` is accepted.
 
 ## 2.6.0 – 2026-11-06
 

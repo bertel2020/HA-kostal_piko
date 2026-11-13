@@ -2,8 +2,16 @@
 
 *[🇬🇧 English version](CHANGELOG.en.md)*
 
-Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
-Versionen folgen dem Feld `version` in `custom_components/kostal/manifest.json`.
+## 2.6.1 – 2026-11-13
+
+**Behoben**
+- **Karte:** Sie wird nur noch neu gezeichnet, wenn sich ihre eigenen Entitäten ändern; der Tooltip im Verlauf friert nicht mehr ein.
+- **Karte:** Auf Touchgeräten lässt sich das Dashboard wieder über den Verlauf hinweg scrollen.
+- **Karte:** Die Farbe wird escaped. Geleerte Felder im Editor setzen die Standardwerte, statt die Karte zu beschädigen.
+- **Zugangsdaten:** Beim Ändern der Verbindung und bei der erneuten Anmeldung wird das Passwort verdeckt eingegeben. Beim Ändern der Verbindung ist es nicht mehr vorausgefüllt.
+- **Sensoren:** Abgewählte Sensoren bleiben nicht mehr als verwaiste Entitäten zurück.
+- **Verbrauchssensoren:** Fällt die BA-Seite dauerhaft aus, werden sie nach der üblichen Zeit unbekannt, statt den letzten Wert zu behalten.
+- **Host:** Eine Eingabe ohne `http://` wird akzeptiert.
 
 ## 2.6.0 – 2026-11-06
 
