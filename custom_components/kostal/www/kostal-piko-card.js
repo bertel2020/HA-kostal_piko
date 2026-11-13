@@ -54,7 +54,7 @@ class KostalPikoCard extends HTMLElement {
     if (!Array.isArray(show) || show.some((block) => !BLOCKS.includes(block))) {
       throw new Error(`show must be a list of: ${BLOCKS.join(", ")}`);
     }
-    this._config = {
+    const defaults = {
       prefix: "sensor.kostal_piko",
       main: "ring",
       color: "amber",
@@ -62,17 +62,33 @@ class KostalPikoCard extends HTMLElement {
       history_hours: 24,
       max_power: 10000,
       name: "Kostal Piko",
-      ...config,
-      show,
     };
+    this._config = { ...config, show };
+    for (const [key, value] of Object.entries(defaults)) {
+      if (this._config[key] === undefined || this._config[key] === null) this._config[key] = value;
+    }
     this._historyAt = 0;
     this._render();
   }
 
   set hass(hass) {
+    const previous = this._hass;
     this._hass = hass;
-    this._render();
+    if (!previous || !this._config || this._changedSince(previous)) this._render();
     if (this._config && this._config.show.includes("history")) this._loadHistory();
+  }
+
+  // only re-render when an entity of this card or the language changed
+  _changedSince(previous) {
+    if (previous.language !== this._hass.language) return true;
+    const prefix = `${this._config.prefix}_`;
+    const now = this._hass.states;
+    const before = previous.states;
+    if (now === before) return false;
+    for (const id of Object.keys(now)) {
+      if (id.startsWith(prefix) && now[id] !== before[id]) return true;
+    }
+    return Object.keys(before).some((id) => id.startsWith(prefix) && !(id in now));
   }
 
   getCardSize() {
@@ -114,7 +130,7 @@ class KostalPikoCard extends HTMLElement {
   }
 
   _color() {
-    return COLORS[this._config.color] || this._config.color;
+    return esc(COLORS[this._config.color] || this._config.color);
   }
 
   _maxPower() {
@@ -346,7 +362,7 @@ class KostalPikoCard extends HTMLElement {
       .value { font-size: 15px; font-weight: 500; color: var(--primary-text-color); }
       .section { border-top: 1px solid var(--divider-color); margin-top: 12px; padding-top: 12px; }
       .section .label { margin-bottom: 8px; }
-      .chart { position: relative; touch-action: none; cursor: crosshair; }
+      .chart { position: relative; touch-action: pan-y; cursor: crosshair; }
       .spark { width: 100%; height: 50px; display: block; }
       .cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--secondary-text-color); opacity: 0.5; pointer-events: none; }
       .dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
@@ -408,8 +424,9 @@ class KostalPikoCardEditor extends HTMLElement {
   }
 
   set hass(hass) {
+    const previous = this._hass;
     this._hass = hass;
-    this._render();
+    if (!previous || !this._config || this._changedSince(previous)) this._render();
   }
 
   _t(key) {
@@ -467,7 +484,14 @@ class KostalPikoCardEditor extends HTMLElement {
 
   _changed(value) {
     const { entity, ...rest } = value;
+    // drop cleared fields so the card falls back to its defaults
+    for (const key of Object.keys(rest)) {
+      if (rest[key] === undefined || rest[key] === null || rest[key] === "") delete rest[key];
+    }
     const config = { ...this._config, ...rest };
+    for (const key of ["name", "history_hours", "max_power"]) {
+      if (!(key in rest)) delete config[key];
+    }
     if (entity && entity.endsWith(POWER_SUFFIX)) {
       config.prefix = entity.slice(0, -POWER_SUFFIX.length);
     }

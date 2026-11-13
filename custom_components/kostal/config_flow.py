@@ -356,7 +356,9 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_HOST, default=current.get(CONF_HOST, "http://")): str,
                 vol.Required(CONF_USERNAME, default=current.get(CONF_USERNAME, "")): str,
-                vol.Required(CONF_PASSWORD, default=current.get(CONF_PASSWORD, "")): str,
+                vol.Required(CONF_PASSWORD): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
             }
         )
         return self.async_show_form(
@@ -395,7 +397,9 @@ class KostalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = vol.Schema(
             {
                 vol.Required(CONF_USERNAME, default=current.get(CONF_USERNAME, "")): str,
-                vol.Required(CONF_PASSWORD): str,
+                vol.Required(CONF_PASSWORD): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
             }
         )
         return self.async_show_form(
