@@ -8,6 +8,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -50,6 +51,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Kostal sensors."""
     runtime = entry.runtime_data
+
+    # sensors that were deselected in the options must not stay behind as
+    # orphaned entities
+    wanted = {
+        f"{runtime.serial_number} {SENSOR_TYPES[sensor_type][0]}"
+        for sensor_type in runtime.monitored_conditions
+    }
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain == "sensor" and entity.unique_id not in wanted:
+            registry.async_remove(entity.entity_id)
+
     async_add_entities(
         PikoSensor(runtime.coordinator, runtime, sensor_type, entry.title)
         for sensor_type in runtime.monitored_conditions

@@ -48,6 +48,7 @@ class KostalCoordinator(DataUpdateCoordinator):
         )
         self.client = client
         self._failures = 0
+        self._ba_failures = 0
         self._failure_limit = max(1, round(UNAVAILABLE_AFTER / update_interval))
         # (time, AC power, DC power) of the last EFFICIENCY_WINDOW
         self._samples: deque = deque()
@@ -86,11 +87,17 @@ class KostalCoordinator(DataUpdateCoordinator):
         data = await self.client.async_get_data()
 
         # The BA sensor is optional; a problem there must not make the
-        # inverter values unavailable, the last BA values are kept.
+        # inverter values unavailable. The last BA values are kept for the
+        # same number of polls as the main data, then the BA sensors
+        # become unavailable.
         ba_data = (self.data or {}).get("ba_data")
         try:
             ba_data = await self.client.async_get_ba_data()
+            self._ba_failures = 0
         except KostalError as err:
+            self._ba_failures += 1
+            if self._ba_failures >= self._failure_limit:
+                ba_data = None
             _LOGGER.debug("BA data not available: %s", err)
         return {"data": data, "ba_data": ba_data}
 

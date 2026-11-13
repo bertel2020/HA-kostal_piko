@@ -206,6 +206,9 @@ class KostalClient:
         password: str,
     ) -> None:
         self._session = session
+        host = host.strip()
+        if "://" not in host:
+            host = f"http://{host}"
         self._host = host.rstrip("/")
         try:
             credentials = f"{username}:{password}".encode("latin-1")
