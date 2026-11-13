@@ -13,10 +13,22 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  # a broken commit must not be published to HACS users
+  tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: pip install -r requirements.test.txt
+      - run: pytest
+
+  release:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
       - name: Read the version
         id: version
@@ -26,8 +38,9 @@ jobs:
         id: exists
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if gh release view "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -35,9 +48,11 @@ jobs:
 
       - name: Write the release notes
         if: steps.exists.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           section() {  # print the changelog section of this version without its heading
-            awk -v v="## ${{ steps.version.outputs.version }} " 'index($0, v) == 1 {found=1; next} /^## / {found=0} found' "$1"
+            awk -v v="## $VERSION " 'index($0, v) == 1 {found=1; next} /^## / {found=0} found' "$1"
           }
           {
             section CHANGELOG.en.md
@@ -45,7 +60,7 @@ jobs:
             section CHANGELOG.md
           } > notes.md
           if ! grep -q '[^[:space:]-]' notes.md; then
-            echo "No changelog section for ${{ steps.version.outputs.version }}" >&2
+            echo "No changelog section for $VERSION" >&2
             exit 1
           fi
 
@@ -53,8 +68,10 @@ jobs:
         if: steps.exists.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA: ${{ github.sha }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
-            --target "${{ github.sha }}" \
-            --title "v${{ steps.version.outputs.version }}" \
+          gh release create "v$VERSION" \
+            --target "$SHA" \
+            --title "v$VERSION" \
             --notes-file notes.md
