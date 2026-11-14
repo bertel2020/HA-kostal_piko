@@ -63,6 +63,8 @@ jobs:
             echo "No changelog section for $VERSION" >&2
             exit 1
           fi
+          # the support footer (English and German)
+          cat .github/release-footer.md >> notes.md
 
       - name: Create the release
         if: steps.exists.outputs.exists == 'false'
