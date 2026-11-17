@@ -9,6 +9,8 @@
  *   details: false               # voltage and current for strings and phases
  *   history_hours: 24
  *   max_power: 10000             # fallback if no maximum output power is configured
+ *   price: 0.30                  # optional, price per kWh: shows the savings of today
+ *   co2_factor: 380              # g CO2 per kWh of grid power, for the avoided CO2
  *   name: Kostal Piko
  */
 const COLORS = {
@@ -25,12 +27,14 @@ const TEXT = {
     yield: "Specific yield", strings: "Strings", phases: "Phases", total: "Total energy",
     history: "Power history", of: "of", string: "String", noData: "No data",
     standby: "Standby", peak: "Peak today", lastActive: "Last active", now: "Now",
+    co2: "CO₂ avoided", saved: "Saved today",
   },
   de: {
     today: "Heute", efficiency: "Wirkungsgrad", average: "Ø 15 min", utilization: "Auslastung",
     yield: "Spez. Ertrag", strings: "Strings", phases: "Phasen", total: "Gesamtertrag",
     history: "Leistungsverlauf", of: "von", string: "String", noData: "Keine Daten",
     standby: "Standby", peak: "Peak heute", lastActive: "Zuletzt aktiv", now: "Jetzt",
+    co2: "CO₂ vermieden", saved: "Heute gespart",
   },
 };
 const HISTORY_REFRESH_MS = 5 * 60 * 1000;
@@ -63,6 +67,7 @@ class KostalPikoCard extends HTMLElement {
       details: false,
       history_hours: 24,
       max_power: 10000,
+      co2_factor: 380,
       name: "Kostal Piko",
     };
     this._config = { ...config, show };
@@ -333,6 +338,34 @@ class KostalPikoCard extends HTMLElement {
       ${tile(this._t("lastActive"), time(last.t))}</div></div>`;
   }
 
+  // lifetime yield, avoided CO2 and (with a price) today's savings
+  _stats() {
+    const total = this._num("total_energy");
+    if (total === null || !this._entity("total_energy")) return "";
+    const items = [[this._t("total"), `${this._fmt(total)} kWh`]];
+    const factor = Number(this._config.co2_factor);
+    if (Number.isFinite(factor) && factor > 0) {
+      const kg = (total * factor) / 1000;
+      items.push([this._t("co2"), kg >= 1000 ? `${this._fmt(kg / 1000, 1)} t` : `${this._fmt(kg)} kg`]);
+    }
+    const price = Number(this._config.price);
+    const today = this._num("daily_energy");
+    if (this._config.price !== undefined && Number.isFinite(price) && price > 0 && today !== null) {
+      let money = this._fmt(today * price, 2);
+      try {
+        money = (today * price).toLocaleString(this._hass?.language, {
+          style: "currency", currency: this._hass?.config?.currency || "EUR",
+        });
+      } catch (err) {
+        // unknown currency code: keep the plain number
+      }
+      items.push([this._t("saved"), money]);
+    }
+    return `<div class="stats">${items
+      .map((item) => `<div><div class="detail">${esc(item[0])}</div><div class="value">${esc(item[1])}</div></div>`)
+      .join("")}</div>`;
+  }
+
   _stringsBlock(color) {
     const strings = [1, 2, 3]
       .map((n) => {
@@ -393,8 +426,7 @@ class KostalPikoCard extends HTMLElement {
     const status = this._entity("status");
     const producing = power !== null && power > 0;
     const show = this._config.show;
-    const total = this._entity("total_energy") && this._num("total_energy") !== null
-      ? `<div class="footer">${esc(this._t("total"))} ${esc(this._fmt(this._num("total_energy")))} kWh</div>` : "";
+    const total = this._stats();
     const empty = !this._entity("current_power");
     const standby = !producing;
 
@@ -443,7 +475,10 @@ class KostalPikoCard extends HTMLElement {
       .chip ha-icon { --mdc-icon-size: 14px; margin-right: 4px; vertical-align: -3px; }
       .tile { background: var(--secondary-background-color); border-radius: 8px; padding: 8px 10px; }
       .tile .detail { margin: 0; }
-      .footer { margin-top: 12px; text-align: right; font-size: 11px; color: var(--secondary-text-color); }
+      .stats { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }
+      .stats > div:last-child:not(:first-child) { text-align: right; }
+      .stats .detail { margin: 0; }
+      .cursor[hidden], .dot[hidden], .tip[hidden] { display: none; }
       .empty { padding: 8px 0; color: var(--secondary-text-color); }
     </style>
     <ha-card>
@@ -467,6 +502,7 @@ const EDITOR_TEXT = {
     name: "Title", entity: "Inverter (current power sensor)", main: "Main display", color: "Color",
     show: "Blocks", details: "Voltage and current", history_hours: "History (hours)",
     max_power: "Ring maximum (W), if no maximum output power is set",
+    price: "Price per kWh (shows savings)", co2_factor: "CO₂ per kWh grid power (g)",
     ring: "Ring", bar: "Bar", number: "Number", amber: "Amber", teal: "Teal", blue: "Blue",
     purple: "Purple", green: "Green", kpis: "Key figures", history: "History", strings: "Strings", phases: "Phases",
   },
@@ -474,6 +510,7 @@ const EDITOR_TEXT = {
     name: "Titel", entity: "Wechselrichter (Sensor Aktuelle Leistung)", main: "Hauptanzeige", color: "Farbe",
     show: "Blöcke", details: "Spannung und Strom", history_hours: "Verlauf (Stunden)",
     max_power: "Maximum des Rings (W), wenn keine maximale Ausgangsleistung gesetzt ist",
+    price: "Preis pro kWh (zeigt die Ersparnis)", co2_factor: "CO₂ je kWh Netzstrom (g)",
     ring: "Ring", bar: "Balken", number: "Zahl", amber: "Amber", teal: "Türkis", blue: "Blau",
     purple: "Violett", green: "Grün", kpis: "Kennzahlen", history: "Verlauf", strings: "Strings", phases: "Phasen",
   },
@@ -515,6 +552,8 @@ class KostalPikoCardEditor extends HTMLElement {
       { name: "details", selector: { boolean: {} } },
       { name: "history_hours", selector: { number: { min: 1, max: 168, mode: "box" } } },
       { name: "max_power", selector: { number: { min: 0, max: 1000000, step: 100, mode: "box", unit_of_measurement: "W" } } },
+      { name: "price", selector: { number: { min: 0, max: 10, step: 0.01, mode: "box" } } },
+      { name: "co2_factor", selector: { number: { min: 0, max: 2000, step: 10, mode: "box", unit_of_measurement: "g" } } },
     ];
   }
 
@@ -529,6 +568,8 @@ class KostalPikoCardEditor extends HTMLElement {
       details: Boolean(c.details),
       history_hours: c.history_hours || 24,
       max_power: c.max_power || 10000,
+      price: c.price,
+      co2_factor: c.co2_factor === undefined ? 380 : c.co2_factor,
     };
   }
 
@@ -552,7 +593,7 @@ class KostalPikoCardEditor extends HTMLElement {
       if (rest[key] === undefined || rest[key] === null || rest[key] === "") delete rest[key];
     }
     const config = { ...this._config, ...rest };
-    for (const key of ["name", "history_hours", "max_power"]) {
+    for (const key of ["name", "history_hours", "max_power", "price", "co2_factor"]) {
       if (!(key in rest)) delete config[key];
     }
     if (entity && entity.endsWith(POWER_SUFFIX)) {

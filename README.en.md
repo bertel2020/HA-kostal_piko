@@ -139,6 +139,8 @@ The card shows the current power as a ring (the maximum is the configured maximu
 | `details` | `false` | Voltage and current for strings and phases |
 | `history_hours` | `24` | Period of the history in hours |
 | `max_power` | `10000` | Maximum of the ring if no maximum output power is set |
+| `price` | – | Price per kWh; shows today's savings |
+| `co2_factor` | `380` | g CO₂ per kWh of grid power for the avoided CO₂ |
 | `name` | `Kostal Piko` | Title of the card |
 
 All options can also be set in the card's **visual editor** (entity picker, main display, color, blocks, details). A free CSS color works only in YAML. In the power history, hovering (or tapping) shows the time and power of the nearest data point.

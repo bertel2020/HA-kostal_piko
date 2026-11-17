@@ -2,6 +2,14 @@
 
 *[🇩🇪 Deutsche Version](CHANGELOG.md)*
 
+## Unreleased
+
+**New**
+- **Card:** At night it shows a summary (peak today, last active) instead of zero values. The history is taller, with a gradient fill and a peak marker, and the time axis shows the weekday and "Now". The ring has a gradient with a sun or moon symbol, and each string has its own color shade. The bottom row shows total energy, avoided CO₂ (`co2_factor`) and, with `price`, today's savings.
+
+**Fixed**
+- **Card:** The empty tooltip box below "Power history" is no longer shown.
+
 ## 2.6.1 – 2026-11-13
 
 **Fixed**

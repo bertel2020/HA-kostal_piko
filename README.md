@@ -140,6 +140,8 @@ Die Karte zeigt die aktuelle Leistung als Ring (Maximum ist die eingetragene max
 | `details` | `false` | Spannung und Strom bei Strings und Phasen |
 | `history_hours` | `24` | Zeitraum des Verlaufs in Stunden |
 | `max_power` | `10000` | Maximum des Rings, wenn keine maximale Ausgangsleistung eingetragen ist |
+| `price` | – | Preis pro kWh; zeigt die Ersparnis von heute |
+| `co2_factor` | `380` | g CO₂ je kWh Netzstrom für das vermiedene CO₂ |
 | `name` | `Kostal Piko` | Titel der Karte |
 
 Alle Optionen lassen sich auch im **visuellen Editor** der Karte einstellen (Entity-Auswahl, Hauptanzeige, Farbe, Blöcke, Details). Eine freie CSS-Farbe geht nur in YAML. Im Leistungsverlauf zeigt der Mauszeiger (oder Fingertipp) Zeit und Leistung des nächsten Messpunkts.

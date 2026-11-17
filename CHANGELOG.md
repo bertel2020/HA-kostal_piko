@@ -2,6 +2,14 @@
 
 *[🇬🇧 English version](CHANGELOG.en.md)*
 
+## Unreleased
+
+**Neu**
+- **Karte:** Nachts zeigt sie statt Nullwerten eine Zusammenfassung (Peak heute, zuletzt aktiv). Der Verlauf ist höher, hat eine Flächenfüllung und eine Peak-Markierung, die Zeitachse nennt Wochentag und „Jetzt“. Der Ring hat einen Farbverlauf mit Sonnen- bzw. Mond-Symbol, und jeder String hat eine eigene Farbabstufung. Unten stehen Gesamtertrag, vermiedenes CO₂ (`co2_factor`) und, mit `price`, die Ersparnis von heute.
+
+**Behoben**
+- **Karte:** Der leere Tooltip-Rahmen unter „Leistungsverlauf“ wird nicht mehr angezeigt.
+
 ## 2.6.1 – 2026-11-13
 
 **Behoben**
