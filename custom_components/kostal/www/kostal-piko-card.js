@@ -229,8 +229,12 @@ class KostalPikoCard extends HTMLElement {
     if (this._config.main === "ring" && this._entity("utilization")) {
       items.push([this._t("utilization"), `${this._fmt(this._num("utilization"), 0)} %`, true]);
     }
+    // the first figure is the hero, the rest fills two columns (an odd last one spans both)
     return `<div class="kpis">${items
-      .map((item) => `<div><div class="label">${esc(item[0])}</div><div class="value">${esc(item[1])}</div></div>`)
+      .map((item, index) => {
+        const cls = index === 0 ? "hero" : index === items.length - 1 && index % 2 === 1 ? "wide" : "";
+        return `<div class="${cls}"><div class="label">${esc(item[0])}</div><div class="value">${esc(item[1])}</div></div>`;
+      })
       .join("")}</div>`;
   }
 
@@ -445,6 +449,9 @@ class KostalPikoCard extends HTMLElement {
       .big { font-size: 28px; font-weight: 500; color: var(--primary-text-color); }
       .small, .label, .detail { font-size: 12px; color: var(--secondary-text-color); }
       .kpis { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+      .kpis .hero { grid-column: 1 / -1; }
+      .kpis .hero .value { font-size: 24px; line-height: 1.2; }
+      .kpis .wide { grid-column: 1 / -1; }
       .value { font-size: 15px; font-weight: 500; color: var(--primary-text-color); }
       .section { border-top: 1px solid var(--divider-color); margin-top: 12px; padding-top: 12px; }
       .section .label { margin-bottom: 8px; }
