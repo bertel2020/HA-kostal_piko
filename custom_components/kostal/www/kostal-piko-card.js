@@ -24,11 +24,13 @@ const TEXT = {
     today: "Today", efficiency: "Efficiency", average: "Avg 15 min", utilization: "Utilization",
     yield: "Specific yield", strings: "Strings", phases: "Phases", total: "Total energy",
     history: "Power history", of: "of", string: "String", noData: "No data",
+    standby: "Standby", peak: "Peak today", lastActive: "Last active", now: "Now",
   },
   de: {
     today: "Heute", efficiency: "Wirkungsgrad", average: "Ø 15 min", utilization: "Auslastung",
     yield: "Spez. Ertrag", strings: "Strings", phases: "Phasen", total: "Gesamtertrag",
     history: "Leistungsverlauf", of: "von", string: "String", noData: "Keine Daten",
+    standby: "Standby", peak: "Peak heute", lastActive: "Zuletzt aktiv", now: "Jetzt",
   },
 };
 const HISTORY_REFRESH_MS = 5 * 60 * 1000;
@@ -75,7 +77,7 @@ class KostalPikoCard extends HTMLElement {
     const previous = this._hass;
     this._hass = hass;
     if (!previous || !this._config || this._changedSince(previous)) this._render();
-    if (this._config && this._config.show.includes("history")) this._loadHistory();
+    if (this._config) this._loadHistory();
   }
 
   // only re-render when an entity of this card or the language changed
@@ -283,6 +285,22 @@ class KostalPikoCard extends HTMLElement {
     cursor.hidden = dot.hidden = tip.hidden = false;
   }
 
+  // night view: replaces strings and phases (all zeros) with a short summary of today
+  _standbyBlock() {
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    const today = this._history.filter((p) => p.t >= midnight.getTime() && p.v > 0);
+    if (!today.length) return "";
+    const peak = today.reduce((best, p) => (p.v > best.v ? p : best));
+    const last = today[today.length - 1];
+    const time = (t) => new Date(t).toLocaleTimeString(this._hass?.language, { hour: "2-digit", minute: "2-digit" });
+    const tile = (label, value) =>
+      `<div class="tile"><div class="detail">${esc(label)}</div><div class="value">${esc(value)}</div></div>`;
+    return `<div class="section"><div class="tiles two">
+      ${tile(this._t("peak"), `${this._power(peak.v)} · ${time(peak.t)}`)}
+      ${tile(this._t("lastActive"), time(last.t))}</div></div>`;
+  }
+
   _stringsBlock(color) {
     const strings = [1, 2, 3]
       .map((n) => {
@@ -343,6 +361,7 @@ class KostalPikoCard extends HTMLElement {
     const total = this._entity("total_energy") && this._num("total_energy") !== null
       ? `<div class="footer">${esc(this._t("total"))} ${esc(this._fmt(this._num("total_energy")))} kWh</div>` : "";
     const empty = !this._entity("current_power");
+    const standby = !producing;
 
     this.shadowRoot.innerHTML = `<style>
       :host { display: block; }
@@ -379,6 +398,8 @@ class KostalPikoCard extends HTMLElement {
       .bar.thick { height: 10px; margin: 8px 0 4px; }
       .bar i { display: block; height: 100%; border-radius: 3px; }
       .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chip ha-icon { --mdc-icon-size: 14px; margin-right: 4px; vertical-align: -3px; }
       .tile { background: var(--secondary-background-color); border-radius: 8px; padding: 8px 10px; }
       .tile .detail { margin: 0; }
       .footer { margin-top: 12px; text-align: right; font-size: 11px; color: var(--secondary-text-color); }
@@ -386,12 +407,13 @@ class KostalPikoCard extends HTMLElement {
     </style>
     <ha-card>
       <div class="head"><span class="title">${esc(this._config.name)}</span>
-        ${status ? `<span class="chip ${producing ? "on" : ""}">${esc(status.state)}</span>` : ""}</div>
+        ${status ? `<span class="chip ${producing ? "on" : ""}">${standby ? '<ha-icon icon="mdi:weather-night"></ha-icon>' : ""}${esc(status.state)}</span>` : ""}</div>
       ${empty ? `<div class="empty">${esc(this._t("noData"))}: ${esc(this._config.prefix)}_current_power</div>` : `
       <div class="top">${this._main(power, max, color)}${show.includes("kpis") ? this._kpis() : ""}</div>
       ${show.includes("history") ? this._historyBlock(color) : ""}
-      ${show.includes("strings") ? this._stringsBlock(color) : ""}
-      ${show.includes("phases") ? this._phasesBlock() : ""}
+      ${standby
+        ? (show.includes("strings") || show.includes("phases") ? this._standbyBlock() : "")
+        : `${show.includes("strings") ? this._stringsBlock(color) : ""}${show.includes("phases") ? this._phasesBlock() : ""}`}
       ${total}`}
     </ha-card>`;
     this._bindChart();
