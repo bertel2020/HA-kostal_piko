@@ -225,18 +225,34 @@ class KostalPikoCard extends HTMLElement {
     const x = (t) => ((t - start) / (end - start)) * 100;
     const y = (v) => ((46 - (Math.max(v, 0) / max) * 42) / 50) * 100;
     this._chart = { points: this._history, start, end, x, y };
-    const line = this._history.map((p) => `${(x(p.t) * 3).toFixed(1)},${(y(p.v) / 2).toFixed(1)}`).join(" ");
+    const coords = this._history.map((p) => `${(x(p.t) * 3).toFixed(1)},${((y(p.v) * 0.8)).toFixed(1)}`);
+    const line = coords.join(" ");
+    const first = coords[0].split(",")[0];
+    const last = coords[coords.length - 1].split(",")[0];
+    const area = `${first},80 ${line} ${last},80`;
+    const peak = this._history.reduce((best, p) => (p.v > best.v ? p : best));
+    const peakLeft = x(peak.t);
+    const peakMarker = peak.v > 0
+      ? `<div class="peak ${peakLeft > 80 ? "flip" : ""}" style="left:${peakLeft.toFixed(1)}%;top:${y(peak.v).toFixed(1)}%;--c:${color}"><i></i><span>${esc(this._power(peak.v))}</span></div>`
+      : "";
     const time = (t) => new Date(t).toLocaleTimeString(this._hass?.language, { hour: "2-digit", minute: "2-digit" });
+    // a 24 h window starts at the same clock time as it ends: add the weekday to the start label
+    const startLabel = new Date(start).toLocaleString(this._hass?.language, { weekday: "short", hour: "2-digit", minute: "2-digit" });
     return `<div class="section"><div class="label">${esc(this._t("history"))}</div>
       <div class="chart">
-        <svg viewBox="0 0 300 50" preserveAspectRatio="none" class="spark" role="img" aria-label="${esc(this._t("history"))}">
-          <polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" points="${line}"/>
+        <svg viewBox="0 0 300 80" preserveAspectRatio="none" class="spark" role="img" aria-label="${esc(this._t("history"))}">
+          <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="${color}" stop-opacity="0.45"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient></defs>
+          <polygon fill="url(#fill)" points="${area}"/>
+          <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="${line}"/>
         </svg>
+        ${peakMarker}
         <div class="cursor" hidden></div>
         <div class="dot" hidden style="background:${color}"></div>
         <div class="tip" hidden></div>
       </div>
-      <div class="axis"><span>${esc(time(start))}</span><span>${esc(time(end))}</span></div></div>`;
+      <div class="axis"><span>${esc(startLabel)}</span><span>${esc(this._t("now"))} · ${esc(time(end))}</span></div></div>`;
   }
 
   _bindChart() {
@@ -268,6 +284,7 @@ class KostalPikoCard extends HTMLElement {
     if (!cursor || !dot || !tip) return;
     const point = this._hover;
     const chart = this._chart;
+    root.querySelector(".chart")?.classList.toggle("hover", Boolean(point));
     if (!point || !chart || point.t < chart.start) {
       cursor.hidden = dot.hidden = tip.hidden = true;
       return;
@@ -382,7 +399,12 @@ class KostalPikoCard extends HTMLElement {
       .section { border-top: 1px solid var(--divider-color); margin-top: 12px; padding-top: 12px; }
       .section .label { margin-bottom: 8px; }
       .chart { position: relative; touch-action: pan-y; cursor: crosshair; }
-      .spark { width: 100%; height: 50px; display: block; }
+      .spark { width: 100%; height: 80px; display: block; }
+      .peak { position: absolute; pointer-events: none; transition: opacity .15s; }
+      .peak i { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--c); }
+      .peak span { position: absolute; left: 6px; top: -8px; font-size: 11px; white-space: nowrap; color: var(--secondary-text-color); }
+      .peak.flip span { left: auto; right: 6px; }
+      .chart.hover .peak { opacity: 0; }
       .cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--secondary-text-color); opacity: 0.5; pointer-events: none; }
       .dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
       .tip { position: absolute; top: -4px; display: flex; flex-direction: column; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; pointer-events: none;
