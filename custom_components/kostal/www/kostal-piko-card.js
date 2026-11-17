@@ -353,15 +353,18 @@ class KostalPikoCard extends HTMLElement {
     const visible = configured ? strings.filter((s) => s.wp) : strings;
     if (!visible.length) return "";
     const reference = Math.max(...visible.map((s) => s.power || 0), 1);
+    // each string gets its own shade of the card color
+    const shade = (index) => `color-mix(in srgb, ${color} ${[100, 72, 48][index % 3]}%, ${index ? "white" : "transparent"})`;
     const rows = visible
-      .map((s) => {
+      .map((s, index) => {
+        const tint = shade(index);
         const fraction = Math.min(Math.max((s.power || 0) / (s.wp || reference), 0), 1);
         const percent = s.wp && s.power !== null ? ` · ${this._fmt((s.power / s.wp) * 100, 0)} %` : "";
         const extra = this._config.details
           ? `<div class="detail">${this._fmt(s.voltage)} V · ${this._fmt(s.current, 2)} A</div>`
           : "";
-        return `<div><div class="row"><span class="name">${esc(this._t("string"))} ${s.n}</span>
-          <div class="bar"><i style="width:${(fraction * 100).toFixed(1)}%;background:${color}"></i></div>
+        return `<div><div class="row"><span class="name"><b style="background:${tint}"></b>${esc(this._t("string"))} ${s.n}</span>
+          <div class="bar"><i style="width:${(fraction * 100).toFixed(1)}%;background:linear-gradient(90deg, color-mix(in srgb, ${tint} 60%, white), ${tint})"></i></div>
           <span class="amount">${esc(this._power(s.power))}${esc(percent)}</span></div>${extra}</div>`;
       })
       .join("");
@@ -428,9 +431,10 @@ class KostalPikoCard extends HTMLElement {
       .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--secondary-text-color); margin-top: 2px; }
       .rows { display: grid; gap: 8px; }
       .row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--primary-text-color); }
-      .name { width: 58px; flex: 0 0 auto; }
+      .name { width: 72px; flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+      .name b { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
       .amount { min-width: 96px; text-align: right; flex: 0 0 auto; }
-      .detail { margin-left: 68px; }
+      .detail { margin-left: 82px; }
       .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--divider-color); overflow: hidden; }
       .bar.thick { height: 10px; margin: 8px 0 4px; }
       .bar i { display: block; height: 100%; border-radius: 3px; }
