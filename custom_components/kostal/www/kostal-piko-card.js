@@ -171,12 +171,27 @@ class KostalPikoCard extends HTMLElement {
     const fraction = power === null || !max ? 0 : Math.min(Math.max(power / max, 0), 1);
     const value = power === null ? "–" : Math.abs(power) >= 1000 ? this._fmt(power / 1000, 1) : this._fmt(power);
     const unit = power !== null && Math.abs(power) >= 1000 ? "kW" : "W";
+    const producing = fraction > 0;
+    // sun while producing, crescent moon otherwise
+    const rays = [0, 45, 90, 135, 180, 225, 270, 315]
+      .map((a) => `<line x1="60" y1="21" x2="60" y2="24" transform="rotate(${a} 60 30)"/>`)
+      .join("");
+    const icon = producing
+      ? `<g stroke="${color}" stroke-width="1.5" stroke-linecap="round" fill="none"><circle cx="60" cy="30" r="4" fill="${color}" stroke="none"/>${rays}</g>`
+      : `<path d="M64 24a7 7 0 1 0 0 12a5.5 5.5 0 0 1 0-12z" fill="var(--secondary-text-color)" opacity="0.6"/>`;
+    // a zero-length round-capped arc would still draw a dot, so the arc is skipped at 0 W
+    const arc = producing
+      ? `<circle class="arc" cx="60" cy="60" r="50" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round"
+        stroke-dasharray="${(fraction * circumference).toFixed(1)} ${circumference.toFixed(1)}" transform="rotate(-90 60 60)" style="filter:drop-shadow(0 0 5px ${color})"/>`
+      : "";
     return `<svg class="ring" viewBox="0 0 120 120" role="img" aria-label="${esc(value)} ${unit}">
+      <defs><linearGradient id="arc" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" style="stop-color:color-mix(in srgb, ${color} 55%, white)"/><stop offset="1" stop-color="${color}"/>
+      </linearGradient></defs>
       <circle cx="60" cy="60" r="50" fill="none" stroke="var(--divider-color)" stroke-width="10" opacity="0.5"/>
-      <circle cx="60" cy="60" r="50" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"
-        stroke-dasharray="${(fraction * circumference).toFixed(1)} ${circumference.toFixed(1)}" transform="rotate(-90 60 60)"/>
-      <text x="60" y="58" text-anchor="middle" class="ring-value">${esc(value)}</text>
-      <text x="60" y="77" text-anchor="middle" class="ring-unit">${unit}</text>
+      ${arc}${icon}
+      <text x="60" y="66" text-anchor="middle" class="ring-value">${esc(value)}</text>
+      <text x="60" y="83" text-anchor="middle" class="ring-unit">${unit}</text>
     </svg>`;
   }
 
