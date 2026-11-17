@@ -2,7 +2,7 @@
 
 *[🇬🇧 English version](CHANGELOG.en.md)*
 
-## Unreleased
+## 2.7.0 – 2026-11-17
 
 **Neu**
 - **Karte:** Nachts zeigt sie statt Nullwerten eine Zusammenfassung (Peak heute, zuletzt aktiv). Der Verlauf ist höher, hat eine Flächenfüllung und eine Peak-Markierung, die Zeitachse nennt Wochentag und „Jetzt“. Der Ring hat einen Farbverlauf mit Sonnen- bzw. Mond-Symbol, und jeder String hat eine eigene Farbabstufung. Unten stehen Gesamtertrag, vermiedenes CO₂ (`co2_factor`) und, mit `price`, die Ersparnis von heute.
