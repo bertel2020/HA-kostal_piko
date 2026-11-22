@@ -7,6 +7,7 @@
  *   color: amber                 # amber | teal | blue | purple | green | any CSS color
  *   show: [kpis, history, strings, phases]
  *   details: false               # voltage and current for strings and phases
+ *   show_outage: true            # notice and chart band while the inverter does not answer
  *   history_hours: 24
  *   max_power: 10000             # fallback if no maximum output power is configured
  *   price: 0.30                  # optional, price per kWh: shows the savings of today
@@ -28,6 +29,8 @@ const TEXT = {
     history: "Power history", of: "of", string: "String", noData: "No data",
     standby: "Standby", peak: "Peak today", lastActive: "Last active", now: "Now",
     co2: "CO₂ avoided", saved: "Saved today",
+    offline: "Offline", noConnection: "No connection since",
+    recovery: "The values return as soon as the inverter answers again.", noDataSince: "no data since",
   },
   de: {
     today: "Heute", efficiency: "Wirkungsgrad", average: "Ø 15 min", utilization: "Auslastung",
@@ -35,10 +38,23 @@ const TEXT = {
     history: "Leistungsverlauf", of: "von", string: "String", noData: "Keine Daten",
     standby: "Standby", peak: "Peak heute", lastActive: "Zuletzt aktiv", now: "Jetzt",
     co2: "CO₂ vermieden", saved: "Heute gespart",
+    offline: "Offline", noConnection: "Keine Verbindung seit",
+    recovery: "Die Werte kommen zurück, sobald der Wechselrichter wieder antwortet.", noDataSince: "keine Daten seit",
   },
+};
+// 24x24 line icons of the tiles and the outage notice
+const ICONS = {
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  chart: '<path d="M4 20h16M7 16v-4M12 16V7M17 16v-7"/>',
+  leaf: '<path d="M5 19c0-8 6-14 15-14 0 9-6 14-14 14M5 19l7-7"/>',
+  coin: '<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a3 3 0 0 0-5 1.5c0 2.5 5 1.5 5 4a3 3 0 0 1-5 1.5M12 6.5v2M12 15.5v2"/>',
+  offline: '<path d="M3 3l18 18M8.5 16.4a5 5 0 0 1 5.6-1M5 12.9a10 10 0 0 1 4.3-2.6M2 9.2a15 15 0 0 1 4-2.6M16.7 10.6A10 10 0 0 1 19 12.9M11.4 6A15 15 0 0 1 22 9.2"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>',
 };
 const HISTORY_REFRESH_MS = 5 * 60 * 1000;
 const HISTORY_POINTS = 72;
+// a pause in the history longer than this (and 3x the usual spacing) counts as a gap
+const GAP_MIN_MS = 15 * 60 * 1000;
 
 const esc = (value) =>
   String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -65,6 +81,7 @@ class KostalPikoCard extends HTMLElement {
       main: "ring",
       color: "amber",
       details: false,
+      show_outage: true,
       history_hours: 24,
       max_power: 10000,
       co2_factor: 380,
@@ -161,8 +178,12 @@ class KostalPikoCard extends HTMLElement {
         .map((item) => ({ t: new Date(item.last_changed || item.last_updated).getTime(), v: parseFloat(item.state) }))
         .filter((point) => Number.isFinite(point.v));
       const step = Math.max(1, Math.ceil(points.length / HISTORY_POINTS));
-      this._history = points.filter((_, index) => index % step === 0);
       this._historyStart = start.getTime();
+      this._history = this._fillGaps(
+        points.filter((_, index) => index % step === 0),
+        this._historyStart,
+        now
+      );
     } catch (err) {
       this._history = [];
     } finally {
@@ -171,32 +192,92 @@ class KostalPikoCard extends HTMLElement {
     }
   }
 
+  // The history has no values while the inverter is unreachable (unavailable
+  // states are dropped). Without help the chart would connect the last value
+  // before the gap diagonally with the first one after it. Instead the line
+  // stays at 0 through the gap and steps up where data resumes.
+  _fillGaps(points, start, end) {
+    if (points.length < 2) return points;
+    const spacing = points.slice(1).map((p, i) => p.t - points[i].t).sort((a, b) => a - b);
+    const limit = Math.max(GAP_MIN_MS, 3 * spacing[Math.floor(spacing.length / 2)]);
+    const out = [];
+    const gap = (from, to, fromValue) => {
+      if (fromValue > 0) out.push({ t: from, v: 0 });
+      out.push({ t: to, v: 0 });
+    };
+    if (points[0].t - start > limit) out.push({ t: start, v: 0 }, { t: points[0].t, v: 0 });
+    points.forEach((point, index) => {
+      const prev = points[index - 1];
+      if (prev && point.t - prev.t > limit) gap(prev.t, point.t, prev.v);
+      out.push(point);
+    });
+    const last = points[points.length - 1];
+    if (end - last.t > limit) gap(last.t, end, last.v);
+    return out;
+  }
+
+  // The inverter does not answer: its entities are unavailable. Only with the
+  // option show_outage (default on).
+  _offline() {
+    return Boolean(this._config.show_outage && this._entity("current_power")?.state === "unavailable");
+  }
+
+  // time since the inverter does not answer (with the weekday if it was not today)
+  _since() {
+    const stamp = this._entity("current_power")?.last_changed;
+    const date = stamp ? new Date(stamp) : null;
+    if (!date || Number.isNaN(date.getTime())) return null;
+    const sameDay = date.toDateString() === new Date().toDateString();
+    const format = sameDay ? { hour: "2-digit", minute: "2-digit" } : { weekday: "short", hour: "2-digit", minute: "2-digit" };
+    return { ms: date.getTime(), text: date.toLocaleString(this._hass?.language, format) };
+  }
+
+  // "4,2 kWh" becomes the number plus a smaller, grey unit
+  _withUnit(text) {
+    const index = text.indexOf(" ");
+    if (index < 0) return esc(text);
+    return `${esc(text.slice(0, index))}<span class="u">${esc(text.slice(index + 1))}</span>`;
+  }
+
+  _tile(icon, label, value) {
+    return `<div class="tile"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[icon]}</svg></span>
+      <div><div class="detail">${esc(label)}</div><div class="value">${this._withUnit(value)}</div></div></div>`;
+  }
+
   _ring(power, max, color) {
+    const offline = this._offline();
     const circumference = 2 * Math.PI * 50;
     const fraction = power === null || !max ? 0 : Math.min(Math.max(power / max, 0), 1);
     const value = power === null ? "–" : Math.abs(power) >= 1000 ? this._fmt(power / 1000, 1) : this._fmt(power);
     const unit = power !== null && Math.abs(power) >= 1000 ? "kW" : "W";
     const producing = fraction > 0;
-    // sun while producing, crescent moon otherwise
+    // sun while producing, crescent moon in standby, nothing during an outage
     const rays = [0, 45, 90, 135, 180, 225, 270, 315]
       .map((a) => `<line x1="60" y1="21" x2="60" y2="24" transform="rotate(${a} 60 30)"/>`)
       .join("");
-    const icon = producing
-      ? `<g stroke="${color}" stroke-width="1.5" stroke-linecap="round" fill="none"><circle cx="60" cy="30" r="4" fill="${color}" stroke="none"/>${rays}</g>`
-      : `<path d="M64 24a7 7 0 1 0 0 12a5.5 5.5 0 0 1 0-12z" fill="var(--secondary-text-color)" opacity="0.6"/>`;
+    let icon = `<path d="M64 24a7 7 0 1 0 0 12a5.5 5.5 0 0 1 0-12z" fill="var(--secondary-text-color)" opacity="0.8"/>`;
+    if (producing) {
+      icon = `<g stroke="${color}" stroke-width="1.5" stroke-linecap="round" fill="none"><circle cx="60" cy="30" r="4" fill="${color}" stroke="none"/>${rays}</g>`;
+    } else if (offline) {
+      icon = "";
+    }
+    // dashed track in standby (grey) and during an outage (warning color)
+    const track = producing
+      ? `<circle cx="60" cy="60" r="50" fill="none" stroke="color-mix(in srgb, ${color} 16%, transparent)" stroke-width="8"/>`
+      : `<circle cx="60" cy="60" r="50" fill="none" stroke="${offline ? "var(--warning-color, #ffa600)" : "var(--secondary-text-color)"}"
+        stroke-opacity="${offline ? 0.45 : 0.35}" stroke-width="8" stroke-dasharray="2 6"/>`;
     // a zero-length round-capped arc would still draw a dot, so the arc is skipped at 0 W
     const arc = producing
-      ? `<circle class="arc" cx="60" cy="60" r="50" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round"
-        stroke-dasharray="${(fraction * circumference).toFixed(1)} ${circumference.toFixed(1)}" transform="rotate(-90 60 60)" style="filter:drop-shadow(0 0 5px ${color})"/>`
+      ? `<circle class="arc" cx="60" cy="60" r="50" fill="none" stroke="url(#arc)" stroke-width="8" stroke-linecap="round"
+        stroke-dasharray="${(fraction * circumference).toFixed(1)} ${circumference.toFixed(1)}" transform="rotate(-90 60 60)" style="filter:drop-shadow(0 0 4px color-mix(in srgb, ${color} 60%, transparent))"/>`
       : "";
     return `<svg class="ring" viewBox="0 0 120 120" role="img" aria-label="${esc(value)} ${unit}">
       <defs><linearGradient id="arc" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" style="stop-color:color-mix(in srgb, ${color} 55%, white)"/><stop offset="1" stop-color="${color}"/>
       </linearGradient></defs>
-      <circle cx="60" cy="60" r="50" fill="none" stroke="var(--divider-color)" stroke-width="10" opacity="0.5"/>
-      ${arc}${icon}
-      <text x="60" y="66" text-anchor="middle" class="ring-value">${esc(value)}</text>
-      <text x="60" y="83" text-anchor="middle" class="ring-unit">${unit}</text>
+      ${track}${arc}${icon}
+      <text x="60" y="68" text-anchor="middle" class="ring-value${offline ? " muted" : ""}">${esc(value)}</text>
+      <text x="60" y="84" text-anchor="middle" class="ring-unit">${unit}</text>
     </svg>`;
   }
 
@@ -208,32 +289,36 @@ class KostalPikoCard extends HTMLElement {
         : `${this._t("of")} ${this._power(max)}`;
     if (this._config.main === "bar") {
       const fraction = power === null || !max ? 0 : Math.min(Math.max(power / max, 0), 1);
-      return `<div class="main-box"><div class="big">${esc(this._power(power))}</div>
+      return `<div class="main-box"><div class="big">${this._withUnit(this._power(power))}</div>
         <div class="bar thick"><i style="width:${(fraction * 100).toFixed(1)}%;background:${color}"></i></div>
         <div class="small">${esc(caption)}</div></div>`;
     }
     if (this._config.main === "number") {
-      return `<div class="main-box"><div class="big" style="color:${color}">${esc(this._power(power))}</div>
+      return `<div class="main-box"><div class="big" style="color:${color}">${this._withUnit(this._power(power))}</div>
         <div class="small">${esc(caption)}</div></div>`;
     }
     return `<div class="main-box">${this._ring(power, max, color)}</div>`;
   }
 
   _kpis() {
+    const offline = this._offline();
     const items = [
       [this._t("today"), `${this._fmt(this._num("daily_energy"), 1)} kWh`, this._entity("daily_energy")],
       [this._t("efficiency"), `${this._fmt(this._num("efficiency"), 1)} %`, this._entity("efficiency")],
       [this._t("average"), this._power(this._num("average_power_15_min")), this._entity("average_power_15_min")],
       [this._t("yield"), `${this._fmt(this._num("specific_yield"), 2)} kWh/kWp`, this._entity("specific_yield")],
     ].filter((item) => item[2]);
-    if (this._config.main === "ring" && this._entity("utilization")) {
+    if (this._config.main === "ring" && this._entity("utilization") && !offline) {
       items.push([this._t("utilization"), `${this._fmt(this._num("utilization"), 0)} %`, true]);
     }
+    // during an outage only figures that still have a value are shown
+    const shown = offline ? items.filter((item) => item[2] === true || item[2].state !== "unavailable") : items;
+    if (!shown.length) return "";
     // the first figure is the hero, the rest fills two columns (an odd last one spans both)
-    return `<div class="kpis">${items
+    return `<div class="kpis">${shown
       .map((item, index) => {
-        const cls = index === 0 ? "hero" : index === items.length - 1 && index % 2 === 1 ? "wide" : "";
-        return `<div class="${cls}"><div class="label">${esc(item[0])}</div><div class="value">${esc(item[1])}</div></div>`;
+        const cls = index === 0 ? "hero" : index === shown.length - 1 && index % 2 === 1 ? "wide" : "";
+        return `<div class="${cls}"><div class="label">${esc(item[0])}</div><div class="value">${this._withUnit(item[1])}</div></div>`;
       })
       .join("")}</div>`;
   }
@@ -246,28 +331,43 @@ class KostalPikoCard extends HTMLElement {
     const end = Date.now();
     const start = this._historyStart || end - this._config.history_hours * 3600 * 1000;
     const max = Math.max(...this._history.map((p) => p.v), 1);
+    // plot area: y 8 (maximum) to 88 (0 W) of a 300 x 96 viewBox
     const x = (t) => ((t - start) / (end - start)) * 100;
-    const y = (v) => ((46 - (Math.max(v, 0) / max) * 42) / 50) * 100;
+    const yUnits = (v) => 8 + (1 - Math.max(v, 0) / max) * 80;
+    const y = (v) => (yUnits(v) / 96) * 100;
     this._chart = { points: this._history, start, end, x, y };
-    const coords = this._history.map((p) => `${(x(p.t) * 3).toFixed(1)},${((y(p.v) * 0.8)).toFixed(1)}`);
+    const coords = this._history.map((p) => `${(x(p.t) * 3).toFixed(1)},${yUnits(p.v).toFixed(1)}`);
     const line = coords.join(" ");
     const first = coords[0].split(",")[0];
     const last = coords[coords.length - 1].split(",")[0];
-    const area = `${first},80 ${line} ${last},80`;
+    const area = `${first},88 ${line} ${last},88`;
     const peak = this._history.reduce((best, p) => (p.v > best.v ? p : best));
     const peakLeft = x(peak.t);
     const peakMarker = peak.v > 0
-      ? `<div class="peak ${peakLeft > 80 ? "flip" : ""}" style="left:${peakLeft.toFixed(1)}%;top:${y(peak.v).toFixed(1)}%;--c:${color}"><i></i><span>${esc(this._power(peak.v))}</span></div>`
+      ? `<div class="peak ${peakLeft > 80 ? "flip" : ""}" style="left:${peakLeft.toFixed(1)}%;top:${y(peak.v).toFixed(1)}%"><i></i><span>${esc(this._power(peak.v))}</span></div>`
       : "";
     const time = (t) => new Date(t).toLocaleTimeString(this._hass?.language, { hour: "2-digit", minute: "2-digit" });
     // a 24 h window starts at the same clock time as it ends: add the weekday to the start label
     const startLabel = new Date(start).toLocaleString(this._hass?.language, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    // outage: shade the time without data and say since when
+    const since = this._offline() ? this._since() : null;
+    const band = since && since.ms < end
+      ? `<rect class="gap-band" x="${(Math.max(x(since.ms), 0) * 3).toFixed(1)}" y="0" width="${((100 - Math.max(x(since.ms), 0)) * 3).toFixed(1)}" height="88"/>`
+      : "";
+    const endLabel = since
+      ? `<span class="gap">${esc(this._t("noDataSince"))} ${esc(since.text)}</span>`
+      : `<span>${esc(this._t("now"))} · ${esc(time(end))}</span>`;
     return `<div class="section"><div class="label">${esc(this._t("history"))}</div>
       <div class="chart">
-        <svg viewBox="0 0 300 80" preserveAspectRatio="none" class="spark" role="img" aria-label="${esc(this._t("history"))}">
+        <svg viewBox="0 0 300 96" preserveAspectRatio="none" class="spark" role="img" aria-label="${esc(this._t("history"))}">
           <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="${color}" stop-opacity="0.45"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
+            <stop offset="0" stop-color="${color}" stop-opacity="0.35"/><stop offset="0.6" stop-color="${color}" stop-opacity="0.08"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
           </linearGradient></defs>
+          ${band}
+          <line class="grid-line" x1="0" x2="300" y1="28" y2="28" vector-effect="non-scaling-stroke"/>
+          <line class="grid-line" x1="0" x2="300" y1="48" y2="48" vector-effect="non-scaling-stroke"/>
+          <line class="grid-line" x1="0" x2="300" y1="68" y2="68" vector-effect="non-scaling-stroke"/>
+          <line class="base-line" x1="0" x2="300" y1="88" y2="88" vector-effect="non-scaling-stroke"/>
           <polygon fill="url(#fill)" points="${area}"/>
           <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="${line}"/>
         </svg>
@@ -276,7 +376,7 @@ class KostalPikoCard extends HTMLElement {
         <div class="dot" hidden style="background:${color}"></div>
         <div class="tip" hidden></div>
       </div>
-      <div class="axis"><span>${esc(startLabel)}</span><span>${esc(this._t("now"))} · ${esc(time(end))}</span></div></div>`;
+      <div class="axis"><span>${esc(startLabel)}</span>${endLabel}</div></div>`;
   }
 
   _bindChart() {
@@ -327,30 +427,29 @@ class KostalPikoCard extends HTMLElement {
   }
 
   // night view: replaces strings and phases (all zeros) with a short summary of today
-  _standbyBlock() {
+  _standbyTiles() {
     const midnight = new Date();
     midnight.setHours(0, 0, 0, 0);
     const today = this._history.filter((p) => p.t >= midnight.getTime() && p.v > 0);
-    if (!today.length) return "";
+    if (!today.length) return [];
     const peak = today.reduce((best, p) => (p.v > best.v ? p : best));
     const last = today[today.length - 1];
     const time = (t) => new Date(t).toLocaleTimeString(this._hass?.language, { hour: "2-digit", minute: "2-digit" });
-    const tile = (label, value) =>
-      `<div class="tile"><div class="detail">${esc(label)}</div><div class="value">${esc(value)}</div></div>`;
-    return `<div class="section"><div class="tiles two">
-      ${tile(this._t("peak"), `${this._power(peak.v)} · ${time(peak.t)}`)}
-      ${tile(this._t("lastActive"), time(last.t))}</div></div>`;
+    return [
+      this._tile("bolt", this._t("peak"), `${this._power(peak.v)} · ${time(peak.t)}`),
+      this._tile("clock", this._t("lastActive"), time(last.t)),
+    ];
   }
 
   // lifetime yield, avoided CO2 and (with a price) today's savings
-  _stats() {
+  _statsTiles() {
     const total = this._num("total_energy");
-    if (total === null || !this._entity("total_energy")) return "";
-    const items = [[this._t("total"), `${this._fmt(total)} kWh`]];
+    if (total === null || !this._entity("total_energy")) return [];
+    const tiles = [this._tile("chart", this._t("total"), `${this._fmt(total)} kWh`)];
     const factor = Number(this._config.co2_factor);
     if (Number.isFinite(factor) && factor > 0) {
       const kg = (total * factor) / 1000;
-      items.push([this._t("co2"), kg >= 1000 ? `${this._fmt(kg / 1000, 1)} t` : `${this._fmt(kg)} kg`]);
+      tiles.push(this._tile("leaf", this._t("co2"), kg >= 1000 ? `${this._fmt(kg / 1000, 1)} t` : `${this._fmt(kg)} kg`));
     }
     const price = Number(this._config.price);
     const today = this._num("daily_energy");
@@ -363,11 +462,9 @@ class KostalPikoCard extends HTMLElement {
       } catch (err) {
         // unknown currency code: keep the plain number
       }
-      items.push([this._t("saved"), money]);
+      tiles.push(this._tile("coin", this._t("saved"), money));
     }
-    return `<div class="stats">${items
-      .map((item) => `<div><div class="detail">${esc(item[0])}</div><div class="value">${esc(item[1])}</div></div>`)
-      .join("")}</div>`;
+    return tiles;
   }
 
   _stringsBlock(color) {
@@ -398,11 +495,11 @@ class KostalPikoCard extends HTMLElement {
         const fraction = Math.min(Math.max((s.power || 0) / (s.wp || reference), 0), 1);
         const percent = s.wp && s.power !== null ? ` · ${this._fmt((s.power / s.wp) * 100, 0)} %` : "";
         const extra = this._config.details
-          ? `<div class="detail">${this._fmt(s.voltage)} V · ${this._fmt(s.current, 2)} A</div>`
+          ? `<div class="detail sub">${this._fmt(s.voltage)} V · ${this._fmt(s.current, 2)} A</div>`
           : "";
         return `<div><div class="row"><span class="name"><b style="background:${tint}"></b>${esc(this._t("string"))} ${s.n}</span>
           <div class="bar"><i style="width:${(fraction * 100).toFixed(1)}%;background:linear-gradient(90deg, color-mix(in srgb, ${tint} 60%, white), ${tint})"></i></div>
-          <span class="amount">${esc(this._power(s.power))}${esc(percent)}</span></div>${extra}</div>`;
+          <span class="amount">${esc(this._power(s.power))}${percent ? `<small>${esc(percent)}</small>` : ""}</span></div>${extra}</div>`;
       })
       .join("");
     return `<div class="section"><div class="label">${esc(this._t("strings"))}</div><div class="rows">${rows}</div></div>`;
@@ -415,11 +512,11 @@ class KostalPikoCard extends HTMLElement {
     if (!phases.length) return "";
     const tiles = phases
       .map(
-        (phase) => `<div class="tile"><div class="detail">L${phase.n}${this._config.details ? ` · ${this._fmt(phase.voltage)} V` : ""}</div>
-          <div class="value">${esc(this._power(phase.power))}</div></div>`
+        (phase) => `<div class="tile"><div><div class="detail">L${phase.n}${this._config.details ? ` · ${this._fmt(phase.voltage)} V` : ""}</div>
+          <div class="value">${this._withUnit(this._power(phase.power))}</div></div></div>`
       )
       .join("");
-    return `<div class="section"><div class="label">${esc(this._t("phases"))}</div><div class="tiles">${tiles}</div></div>`;
+    return `<div class="section"><div class="label">${esc(this._t("phases"))}</div><div class="tiles three">${tiles}</div></div>`;
   }
 
   _render() {
@@ -428,76 +525,111 @@ class KostalPikoCard extends HTMLElement {
     const power = this._num("current_power");
     const max = this._maxPower();
     const status = this._entity("status");
+    const offline = this._offline();
+    const since = offline ? this._since() : null;
     const producing = power !== null && power > 0;
     const show = this._config.show;
-    const total = this._stats();
     const empty = !this._entity("current_power");
     const standby = !producing;
+    const summary = standby && (show.includes("strings") || show.includes("phases")) ? this._standbyTiles() : [];
+    const tiles = [...summary, ...this._statsTiles()];
+    const kpis = show.includes("kpis") ? this._kpis() : "";
+    const chipText = offline ? this._t("offline") : status?.state;
+    const chipClass = offline ? "warn" : producing ? "on" : "";
+    const alert = offline
+      ? `<div class="alert"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS.offline}</svg>
+          <div><b>${esc(this._t("noConnection"))}${since ? ` ${esc(since.text)}` : ""}</b><span>${esc(this._t("recovery"))}</span></div></div>`
+      : "";
 
     this.shadowRoot.innerHTML = `<style>
       :host { display: block; }
-      ha-card { padding: 16px; }
-      .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-      .title { font-size: 16px; font-weight: 500; color: var(--primary-text-color); }
-      .chip { font-size: 12px; padding: 2px 10px; border-radius: 8px; background: var(--secondary-background-color); color: var(--secondary-text-color); }
-      .chip.on { background: color-mix(in srgb, var(--success-color, #43a047) 18%, transparent); color: var(--success-color, #43a047); }
-      .top { display: flex; align-items: center; gap: 16px; }
+      ha-card { padding: 16px; --accent: ${color}; --warn: var(--warning-color, #ffa600); --ok: var(--success-color, #43a047); }
+      .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+      .title { font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--primary-text-color); }
+      .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 3px 10px 3px 8px; border-radius: 999px; white-space: nowrap;
+        background: color-mix(in srgb, var(--secondary-text-color) 12%, transparent); color: var(--secondary-text-color); }
+      .chip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .chip.on { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+      .chip.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+      .alert { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; margin-bottom: 14px;
+        background: color-mix(in srgb, var(--warn) 10%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+      .alert svg { flex: 0 0 auto; color: var(--warn); margin-top: 1px; }
+      .alert b { display: block; font-size: 14px; font-weight: 600; color: var(--primary-text-color); }
+      .alert span { font-size: 12px; color: var(--secondary-text-color); }
+      .top { display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 16px;
+        background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+          color-mix(in srgb, var(--primary-text-color) 2%, transparent); }
+      .top.calm { background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+          color-mix(in srgb, var(--primary-text-color) 2%, transparent); }
+      .top.solo { justify-content: center; }
       .main-box { flex: 0 0 auto; min-width: 110px; }
-      .ring { width: 120px; height: 120px; display: block; }
-      .ring-value { font-size: 24px; font-weight: 500; fill: var(--primary-text-color); }
+      .ring { width: 116px; height: 116px; display: block; }
+      .ring-value { font-size: 28px; font-weight: 600; letter-spacing: -.02em; fill: var(--primary-text-color); font-variant-numeric: tabular-nums; }
+      .ring-value.muted { fill: var(--secondary-text-color); }
       .ring-unit { font-size: 12px; fill: var(--secondary-text-color); }
-      .big { font-size: 28px; font-weight: 500; color: var(--primary-text-color); }
-      .small, .label, .detail { font-size: 12px; color: var(--secondary-text-color); }
-      .kpis { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
-      .kpis .hero { grid-column: 1 / -1; }
-      .kpis .hero .value { font-size: 24px; line-height: 1.2; }
-      .kpis .wide { grid-column: 1 / -1; }
-      .value { font-size: 15px; font-weight: 500; color: var(--primary-text-color); }
-      .section { border-top: 1px solid var(--divider-color); margin-top: 12px; padding-top: 12px; }
-      .section .label { margin-bottom: 8px; }
+      .big { font-size: 30px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--primary-text-color); }
+      .small { font-size: 12px; color: var(--secondary-text-color); }
+      .label, .detail { font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); }
+      .detail.sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; margin: 2px 0 0 80px; }
+      .value { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; margin-top: 2px; color: var(--primary-text-color); }
+      .u { font-size: .62em; font-weight: 500; color: var(--secondary-text-color); margin-left: .2em; letter-spacing: 0; }
+      .kpis { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+      .kpis .hero, .kpis .wide { grid-column: 1 / -1; }
+      .kpis .hero .value { font-size: 30px; line-height: 1.1; letter-spacing: -.02em; }
+      .kpis .hero .u { font-size: .5em; }
+      .section { margin-top: 20px; }
+      .section > .label { margin-bottom: 8px; }
       .chart { position: relative; touch-action: pan-y; cursor: crosshair; }
-      .spark { width: 100%; height: 80px; display: block; }
+      .spark { width: 100%; height: 96px; display: block; overflow: visible; }
+      .grid-line { stroke: var(--secondary-text-color); stroke-opacity: .25; stroke-dasharray: 2 4; }
+      .base-line { stroke: var(--secondary-text-color); stroke-opacity: .3; }
+      .gap-band { fill: color-mix(in srgb, var(--warn) 12%, transparent); }
       .peak { position: absolute; pointer-events: none; transition: opacity .15s; }
-      .peak i { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--c); }
-      .peak span { position: absolute; left: 6px; top: -8px; font-size: 11px; white-space: nowrap; color: var(--secondary-text-color); }
-      .peak.flip span { left: auto; right: 6px; }
+      .peak i { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
+      .peak span { position: absolute; left: 9px; top: 0; transform: translateY(-50%); font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums;
+        padding: 1px 7px; border-radius: 999px; background: var(--card-background-color, #fff); color: var(--primary-text-color);
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+      .peak.flip span { left: auto; right: 9px; }
       .chart.hover .peak { opacity: 0; }
       .cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--secondary-text-color); opacity: 0.5; pointer-events: none; }
       .dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
       .tip { position: absolute; top: -4px; display: flex; flex-direction: column; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; pointer-events: none;
         background: var(--card-background-color, #fff); color: var(--primary-text-color); border: 1px solid var(--divider-color); }
       .tip span { font-size: 11px; color: var(--secondary-text-color); }
-      .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--secondary-text-color); margin-top: 2px; }
-      .rows { display: grid; gap: 8px; }
+      .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--secondary-text-color); margin-top: 6px; font-variant-numeric: tabular-nums; }
+      .axis .gap { color: var(--warn); }
+      .rows { display: grid; gap: 10px; }
       .row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--primary-text-color); }
-      .name { width: 72px; flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+      .name { width: 70px; flex: 0 0 auto; display: flex; align-items: center; gap: 6px; font-weight: 500; }
       .name b { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
-      .amount { min-width: 96px; text-align: right; flex: 0 0 auto; }
-      .detail { margin-left: 82px; }
-      .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--divider-color); overflow: hidden; }
+      .amount { min-width: 86px; text-align: right; flex: 0 0 auto; font-weight: 500; font-variant-numeric: tabular-nums; }
+      .amount small { color: var(--secondary-text-color); font-weight: 400; font-size: 12px; }
+      .bar { flex: 1; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--primary-text-color) 8%, transparent); overflow: hidden; }
       .bar.thick { height: 10px; margin: 8px 0 4px; }
-      .bar i { display: block; height: 100%; border-radius: 3px; }
-      .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-      .tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .chip ha-icon { --mdc-icon-size: 14px; margin-right: 4px; vertical-align: -3px; }
-      .tile { background: var(--secondary-background-color); border-radius: 8px; padding: 8px 10px; }
-      .tile .detail { margin: 0; }
-      .stats { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }
-      .stats > div:last-child:not(:first-child) { text-align: right; }
-      .stats .detail { margin: 0; }
+      .bar i { display: block; height: 100%; border-radius: 4px; }
+      .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .tiles.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .tiles:not(.three) > .tile:last-child:nth-child(odd):not(:only-child) { grid-column: 1 / -1; }
+      .tile { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; border-radius: 12px;
+        background: color-mix(in srgb, var(--primary-text-color) 4%, transparent);
+        border: 1px solid color-mix(in srgb, var(--primary-text-color) 6%, transparent); }
+      .tile > div { min-width: 0; }
+      .tile .value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ico { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+        background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+      .ico svg { width: 16px; height: 16px; }
       .cursor[hidden], .dot[hidden], .tip[hidden] { display: none; }
       .empty { padding: 8px 0; color: var(--secondary-text-color); }
     </style>
     <ha-card>
       <div class="head"><span class="title">${esc(this._config.name)}</span>
-        ${status ? `<span class="chip ${producing ? "on" : ""}">${standby ? '<ha-icon icon="mdi:weather-night"></ha-icon>' : ""}${esc(status.state)}</span>` : ""}</div>
+        ${chipText ? `<span class="chip ${chipClass}"><i></i>${esc(chipText)}</span>` : ""}</div>
       ${empty ? `<div class="empty">${esc(this._t("noData"))}: ${esc(this._config.prefix)}_current_power</div>` : `
-      <div class="top">${this._main(power, max, color)}${show.includes("kpis") ? this._kpis() : ""}</div>
+      ${alert}
+      <div class="top ${standby ? "calm" : ""} ${kpis ? "" : "solo"}">${this._main(power, max, color)}${kpis}</div>
       ${show.includes("history") ? this._historyBlock(color) : ""}
-      ${standby
-        ? (show.includes("strings") || show.includes("phases") ? this._standbyBlock() : "")
-        : `${show.includes("strings") ? this._stringsBlock(color) : ""}${show.includes("phases") ? this._phasesBlock() : ""}`}
-      ${total}`}
+      ${standby ? "" : `${show.includes("strings") ? this._stringsBlock(color) : ""}${show.includes("phases") ? this._phasesBlock() : ""}`}
+      ${tiles.length ? `<div class="section tiles">${tiles.join("")}</div>` : ""}`}
     </ha-card>`;
     this._bindChart();
     this._applyHover();
@@ -507,7 +639,7 @@ class KostalPikoCard extends HTMLElement {
 const EDITOR_TEXT = {
   en: {
     name: "Title", entity: "Inverter (current power sensor)", main: "Main display", color: "Color",
-    show: "Blocks", details: "Voltage and current", history_hours: "History (hours)",
+    show: "Blocks", details: "Voltage and current", show_outage: "Show outage notice", history_hours: "History (hours)",
     max_power: "Ring maximum (W), if no maximum output power is set",
     price: "Price per kWh (shows savings)", co2_factor: "CO₂ per kWh grid power (g)",
     ring: "Ring", bar: "Bar", number: "Number", amber: "Amber", teal: "Teal", blue: "Blue",
@@ -515,7 +647,7 @@ const EDITOR_TEXT = {
   },
   de: {
     name: "Titel", entity: "Wechselrichter (Sensor Aktuelle Leistung)", main: "Hauptanzeige", color: "Farbe",
-    show: "Blöcke", details: "Spannung und Strom", history_hours: "Verlauf (Stunden)",
+    show: "Blöcke", details: "Spannung und Strom", show_outage: "Ausfall anzeigen", history_hours: "Verlauf (Stunden)",
     max_power: "Maximum des Rings (W), wenn keine maximale Ausgangsleistung gesetzt ist",
     price: "Preis pro kWh (zeigt die Ersparnis)", co2_factor: "CO₂ je kWh Netzstrom (g)",
     ring: "Ring", bar: "Balken", number: "Zahl", amber: "Amber", teal: "Türkis", blue: "Blau",
@@ -557,6 +689,7 @@ class KostalPikoCardEditor extends HTMLElement {
       { name: "color", selector: { select: { mode: "dropdown", options: colorOptions } } },
       { name: "show", selector: { select: { multiple: true, mode: "list", options: options(BLOCKS) } } },
       { name: "details", selector: { boolean: {} } },
+      { name: "show_outage", selector: { boolean: {} } },
       { name: "history_hours", selector: { number: { min: 1, max: 168, mode: "box" } } },
       { name: "max_power", selector: { number: { min: 0, max: 1000000, step: 100, mode: "box", unit_of_measurement: "W" } } },
       { name: "price", selector: { number: { min: 0, max: 10, step: 0.01, mode: "box" } } },
@@ -573,6 +706,7 @@ class KostalPikoCardEditor extends HTMLElement {
       color: c.color || "amber",
       show: c.show === undefined ? BLOCKS : c.show,
       details: Boolean(c.details),
+      show_outage: c.show_outage !== false,
       history_hours: c.history_hours || 24,
       max_power: c.max_power || 10000,
       price: c.price,

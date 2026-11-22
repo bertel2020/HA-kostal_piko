@@ -6,6 +6,11 @@
 
 **Neu**
 - **Ausfallmeldung:** Antwortet der Wechselrichter 30 Minuten lang nicht, schaltet der neue Binary Sensor „Problem“ ein und unter Reparaturen erscheint ein Hinweis, der nach der Rückkehr des Wechselrichters von selbst verschwindet. Mit dem Binary Sensor lässt sich eine Benachrichtigung auf das Handy einrichten.
+- **Karte, neues Design:** Klarere Typografie (Großbuchstaben-Labels, kleine graue Einheiten), weniger Trennlinien, ein Farbverlauf hinter Ring und Kennzahlen, Kacheln mit Icons, ein dünnerer Ring (nachts gestrichelt), ein höherer Verlauf mit Hilfslinien und Peak-Pille sowie ein Status-Chip mit Punkt.
+- **Karte, Ausfall-Zustand:** Antwortet der Wechselrichter nicht, zeigt die Karte „Keine Verbindung seit …“, einen gestrichelten Ring in Warnfarbe und im Verlauf eine farbige Markierung. Die Anzeige lässt sich mit `show_outage: false` (oder im Editor) abschalten.
+
+**Behoben**
+- **Karte:** Fehlen im Leistungsverlauf Werte (z. B. bei einem Ausfall oder über Nacht), verbindet die Linie die Lücke nicht mehr schräg, sondern bleibt bei 0 und springt erst dort hoch, wo wieder Daten vorliegen.
 
 ## 2.7.0 – 2026-11-17
 

@@ -138,6 +138,7 @@ Die Karte zeigt die aktuelle Leistung als Ring (Maximum ist die eingetragene max
 | `color` | `amber` | `amber`, `teal`, `blue`, `purple`, `green` oder eine CSS-Farbe |
 | `show` | alle | Liste aus `kpis`, `history`, `strings`, `phases` |
 | `details` | `false` | Spannung und Strom bei Strings und Phasen |
+| `show_outage` | `true` | Hinweis „Keine Verbindung seit …“ und farbige Markierung im Verlauf, solange der Wechselrichter nicht antwortet |
 | `history_hours` | `24` | Zeitraum des Verlaufs in Stunden |
 | `max_power` | `10000` | Maximum des Rings, wenn keine maximale Ausgangsleistung eingetragen ist |
 | `price` | – | Preis pro kWh; zeigt die Ersparnis von heute |

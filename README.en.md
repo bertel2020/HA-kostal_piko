@@ -137,6 +137,7 @@ The card shows the current power as a ring (the maximum is the configured maximu
 | `color` | `amber` | `amber`, `teal`, `blue`, `purple`, `green` or a CSS color |
 | `show` | all | List of `kpis`, `history`, `strings`, `phases` |
 | `details` | `false` | Voltage and current for strings and phases |
+| `show_outage` | `true` | Notice "No connection since …" and a colored band in the history while the inverter does not answer |
 | `history_hours` | `24` | Period of the history in hours |
 | `max_power` | `10000` | Maximum of the ring if no maximum output power is set |
 | `price` | – | Price per kWh; shows today's savings |

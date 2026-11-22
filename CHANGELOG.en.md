@@ -6,6 +6,11 @@
 
 **New**
 - **Outage alert:** If the inverter does not respond for 30 minutes, the new "Problem" binary sensor turns on and a notice appears under Repairs, which disappears by itself when the inverter is back. The binary sensor can be used to send a notification to your phone.
+- **Card, new design:** Clearer typography (uppercase labels, small grey units), fewer divider lines, a color gradient behind the ring and key figures, tiles with icons, a thinner ring (dashed at night), a taller history with guide lines and a peak pill, and a status chip with a dot.
+- **Card, outage state:** If the inverter does not answer, the card shows "No connection since …", a dashed ring in the warning color and a colored band in the history. It can be turned off with `show_outage: false` (or in the editor).
+
+**Fixed**
+- **Card:** If the power history has no values (e.g. during an outage or overnight), the line no longer connects the gap diagonally. It stays at 0 and steps up where data resumes.
 
 ## 2.7.0 – 2026-11-17
 
