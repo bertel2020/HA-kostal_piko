@@ -40,7 +40,7 @@ from .coordinator import KostalCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = "2.8.0"
+__version__ = "2.7.0"
 
 PLATFORMS = ["sensor", "binary_sensor"]
 

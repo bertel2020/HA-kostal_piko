@@ -2,7 +2,7 @@
 
 *[🇩🇪 Deutsche Version](CHANGELOG.md)*
 
-## 2.8.0 – 2026-11-22
+## Unreleased
 
 **New**
 - **Outage alert:** If the inverter does not respond for 30 minutes, the new "Problem" binary sensor turns on and a notice appears under Repairs, which disappears by itself when the inverter is back. The binary sensor can be used to send a notification to your phone.
