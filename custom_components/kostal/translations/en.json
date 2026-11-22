@@ -227,6 +227,17 @@
       "specific_yield": {
         "name": "Specific yield"
       }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    }
+  },
+  "issues": {
+    "inverter_unreachable": {
+      "title": "{name} has not answered since {since}",
+      "description": "The inverter has not answered for more than 30 minutes (since {since}). It produces and reports nothing. Check the power supply, the AC and DC switches, the network connection and the display of the inverter. The notice disappears by itself as soon as the inverter answers again."
     }
   }
 }

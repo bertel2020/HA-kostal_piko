@@ -2,6 +2,11 @@
 
 *[🇬🇧 English version](CHANGELOG.en.md)*
 
+## Unveröffentlicht
+
+**Neu**
+- **Ausfallmeldung:** Antwortet der Wechselrichter 30 Minuten lang nicht, schaltet der neue Binary Sensor „Problem“ ein und unter Reparaturen erscheint ein Hinweis, der nach der Rückkehr des Wechselrichters von selbst verschwindet. Mit dem Binary Sensor lässt sich eine Benachrichtigung auf das Handy einrichten.
+
 ## 2.7.0 – 2026-11-17
 
 **Neu**

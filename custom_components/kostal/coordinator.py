@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -16,6 +17,7 @@ from .client import KostalAuthError, KostalClient, KostalError
 from .const import (
     DOMAIN,
     EFFICIENCY_WINDOW,
+    OUTAGE_AFTER,
     POWER_AVERAGE_WINDOW,
     UNAVAILABLE_AFTER,
 )
@@ -29,7 +31,9 @@ class KostalCoordinator(DataUpdateCoordinator):
     A failed poll keeps the last values; after UNAVAILABLE_AFTER (about 90
     seconds, so 3 polls with the default interval) of failed polls in a row
     all entities become unavailable. The coordinator logs the failure once and the recovery once.
-    Wrong credentials start a re-authentication immediately.
+    Wrong credentials start a re-authentication immediately. After
+    OUTAGE_AFTER without an answer a repair issue is created (removed on
+    recovery) and the problem binary sensor turns on.
     """
 
     def __init__(
@@ -49,6 +53,9 @@ class KostalCoordinator(DataUpdateCoordinator):
         self.client = client
         self._failures = 0
         self._ba_failures = 0
+        # time of the first failed poll of the current series, None while the
+        # inverter answers
+        self._failed_since = None
         self._failure_limit = max(1, round(UNAVAILABLE_AFTER / update_interval))
         # (time, AC power, DC power) of the last EFFICIENCY_WINDOW
         self._samples: deque = deque()
@@ -59,6 +66,33 @@ class KostalCoordinator(DataUpdateCoordinator):
     def efficiency(self) -> float:
         """Efficiency in percent, averaged over the last EFFICIENCY_WINDOW."""
         return windowed_efficiency([(ac, dc) for _, ac, dc in self._samples])
+
+    @property
+    def outage(self) -> bool:
+        """True if the inverter has not answered for OUTAGE_AFTER."""
+        return (
+            self._failed_since is not None
+            and dt_util.utcnow() - self._failed_since >= OUTAGE_AFTER
+        )
+
+    def _update_issue(self) -> None:
+        """Create the repair issue during an outage, remove it afterwards."""
+        issue_id = f"inverter_unreachable_{self.config_entry.entry_id}"
+        if self.outage:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.ERROR,
+                translation_key="inverter_unreachable",
+                translation_placeholders={
+                    "name": self.config_entry.title,
+                    "since": dt_util.as_local(self._failed_since).strftime("%d.%m. %H:%M"),
+                },
+            )
+        else:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
 
     @property
     def average_power(self) -> int | None:
@@ -108,6 +142,9 @@ class KostalCoordinator(DataUpdateCoordinator):
             raise ConfigEntryAuthFailed("Invalid username or password") from err
         except KostalError as err:
             self._failures += 1
+            if self._failed_since is None:
+                self._failed_since = dt_util.utcnow()
+            self._update_issue()
             if self.data is None or self._failures >= self._failure_limit:
                 raise UpdateFailed(f"Update of the inverter failed: {err}") from err
             _LOGGER.debug(
@@ -118,5 +155,7 @@ class KostalCoordinator(DataUpdateCoordinator):
             )
             return self.data
         self._failures = 0
+        self._failed_since = None
+        self._update_issue()
         self._record_sample(result["data"])
         return result

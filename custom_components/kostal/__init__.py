@@ -21,6 +21,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .client import KostalAuthError, KostalClient, KostalError
@@ -41,7 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 
 __version__ = "2.7.0"
 
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "binary_sensor"]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -148,4 +149,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bo
 
 async def async_unload_entry(hass: HomeAssistant, entry: KostalConfigEntry) -> bool:
     """Unload a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        ir.async_delete_issue(hass, DOMAIN, f"inverter_unreachable_{entry.entry_id}")
+    return unloaded

@@ -39,6 +39,13 @@ POWER_AVERAGE_WINDOW = timedelta(minutes=15)
 # before they become unavailable (with the default interval: 3 polls).
 UNAVAILABLE_AFTER = timedelta(seconds=90)
 
+# After this long without a successful poll the inverter counts as failed:
+# the "Problem" binary sensor turns on and a repair issue is created. The
+# inverter stays reachable at night (status "Aus"), so this applies around the
+# clock. It is much longer than UNAVAILABLE_AFTER on purpose: short dropouts
+# and restarts must not raise an alarm.
+OUTAGE_AFTER = timedelta(minutes=30)
+
 
 SENSOR_TYPES = {
     "solar_generator_power": ["Solar generator power", UnitOfPower.WATT, "mdi:solar-power", "measurement", "power"],

@@ -156,6 +156,8 @@ Unter Einstellungen → Geräte & Dienste → Kostal Piko → ⋮ → **Diagnose
 
 Alle Sensoren werden von einem gemeinsamen Coordinator im eingestellten Intervall (Standard 30 Sekunden) aktualisiert (ein Abruf pro Intervall, nicht je Sensor). Antwortet der Wechselrichter einmal oder zweimal nicht, behalten die Sensoren ihren letzten Wert. Schlagen **Abrufe über etwa 90 Sekunden** hinweg fehl (beim Standardintervall drei in Folge, bei längerem Intervall entsprechend weniger), werden alle Sensoren **„nicht verfügbar“** und im Log erscheint einmal eine Fehlermeldung. Sobald der Wechselrichter wieder antwortet, werden die Sensoren wieder verfügbar und die Wiederherstellung wird einmal geloggt. So zeigt kein Sensor veraltete Werte als aktuell an. Ein Ausfall des optionalen BA-Sensors macht die übrigen Werte nicht nicht verfügbar.
 
+**Ausfallmeldung:** Antwortet der Wechselrichter **30 Minuten** lang nicht, schaltet der Binary Sensor `binary_sensor.kostal_piko_problem` (Geräteklasse „Problem“) ein und unter Einstellungen → System → Reparaturen erscheint ein Hinweis. Beides verschwindet, sobald der Wechselrichter wieder antwortet. Der Binary Sensor bleibt auch während des Ausfalls verfügbar, du kannst ihn also als Auslöser einer Automation mit Handy-Benachrichtigung verwenden (Zustand `on` für 0 Sekunden). Der Hinweis in den Reparaturen selbst löst keine Benachrichtigung aus. Der Wechselrichter bleibt nachts erreichbar, die Meldung gilt daher rund um die Uhr.
+
 Im Standby (nachts) ist der Wechselrichter erreichbar und meldet den Status „Aus“; die Sensoren bleiben dann verfügbar.
 
 ### BA-Sensor

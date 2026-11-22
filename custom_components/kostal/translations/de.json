@@ -227,6 +227,17 @@
       "specific_yield": {
         "name": "Spezifischer Ertrag"
       }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    }
+  },
+  "issues": {
+    "inverter_unreachable": {
+      "title": "{name} antwortet seit {since} nicht mehr",
+      "description": "Der Wechselrichter antwortet seit mehr als 30 Minuten nicht (seit {since}). Er erzeugt und meldet nichts. Prüfe Stromversorgung, AC- und DC-Schalter, Netzwerkverbindung und das Display des Wechselrichters. Der Hinweis verschwindet von selbst, sobald der Wechselrichter wieder antwortet."
     }
   }
 }

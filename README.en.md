@@ -155,6 +155,8 @@ Under Settings → Devices & Services → Kostal Piko → ⋮ → **Download dia
 
 All sensors are updated by a shared coordinator at the configured interval (default 30 seconds, one request per interval, not per sensor). If the inverter does not respond once or twice, the sensors keep their last value. If polls fail **for about 90 seconds** (three in a row with the default interval, fewer with a longer interval), all sensors become **"unavailable"** and one error is written to the log. As soon as the inverter responds again the sensors become available and the recovery is logged once. This way no sensor presents stale values as current. A failure of the optional BA sensor does not make the other values unavailable.
 
+**Outage alert:** If the inverter does not respond for **30 minutes**, the binary sensor `binary_sensor.kostal_piko_problem` (device class "problem") turns on and a notice appears under Settings → System → Repairs. Both disappear as soon as the inverter responds again. The binary sensor stays available during the outage, so you can use it as the trigger of an automation that sends a phone notification (state `on`). The repair notice itself does not send a notification. The inverter stays reachable at night, so the alert applies around the clock.
+
 In standby (at night) the inverter is reachable and reports the status "Aus" (off); the sensors stay available.
 
 ### BA sensor
