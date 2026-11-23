@@ -92,6 +92,7 @@ class KostalPikoCard extends HTMLElement {
       if (this._config[key] === undefined || this._config[key] === null) this._config[key] = value;
     }
     this._historyAt = 0;
+    this._mapSource = null;
     this._render();
   }
 
@@ -109,10 +110,37 @@ class KostalPikoCard extends HTMLElement {
     const now = this._hass.states;
     const before = previous.states;
     if (now === before) return false;
+    // sensors found through the device may have another prefix
+    for (const id of Object.values(this._entityMap())) {
+      if (now[id] !== before[id]) return true;
+    }
     for (const id of Object.keys(now)) {
       if (id.startsWith(prefix) && now[id] !== before[id]) return true;
     }
     return Object.keys(before).some((id) => id.startsWith(prefix) && !(id in now));
+  }
+
+  // The entity IDs of the sensors can differ from the prefix (e.g. an area
+  // name in front: sensor.technik_kostal_piko_efficiency). So the sensors are
+  // looked up through the device of the current power sensor and their
+  // translation key. The prefix stays the fallback.
+  _entityMap() {
+    const registry = this._hass?.entities;
+    if (!registry) return {};
+    if (this._mapSource === registry) return this._map;
+    const device = registry[`${this._config.prefix}_current_power`]?.device_id;
+    const map = {};
+    if (device) {
+      for (const [id, entry] of Object.entries(registry)) {
+        if (entry.device_id !== device || !entry.translation_key) continue;
+        // translation key -> key of the card ("string1_power" -> "string_1_power")
+        const key = entry.translation_key.replace(/^string(\d)_/, "string_$1_").replace("15min", "15_min");
+        map[key] = id;
+      }
+    }
+    this._mapSource = registry;
+    this._map = map;
+    return map;
   }
 
   getCardSize() {
@@ -133,7 +161,8 @@ class KostalPikoCard extends HTMLElement {
   }
 
   _entity(key) {
-    return this._hass?.states[`${this._config.prefix}_${key}`];
+    const id = this._entityMap()[key] || `${this._config.prefix}_${key}`;
+    return this._hass?.states[id];
   }
 
   _num(key) {
@@ -255,7 +284,7 @@ class KostalPikoCard extends HTMLElement {
     const rays = [0, 45, 90, 135, 180, 225, 270, 315]
       .map((a) => `<line x1="60" y1="21" x2="60" y2="24" transform="rotate(${a} 60 30)"/>`)
       .join("");
-    let icon = `<path d="M64 24a7 7 0 1 0 0 12a5.5 5.5 0 0 1 0-12z" fill="var(--secondary-text-color)" opacity="0.8"/>`;
+    let icon = `<path d="M64 24a7 7 0 1 0 0 12a5.5 5.5 0 0 1 0-12z" fill="var(--dim)" opacity="0.8"/>`;
     if (producing) {
       icon = `<g stroke="${color}" stroke-width="1.5" stroke-linecap="round" fill="none"><circle cx="60" cy="30" r="4" fill="${color}" stroke="none"/>${rays}</g>`;
     } else if (offline) {
@@ -264,7 +293,7 @@ class KostalPikoCard extends HTMLElement {
     // dashed track in standby (grey) and during an outage (warning color)
     const track = producing
       ? `<circle cx="60" cy="60" r="50" fill="none" stroke="color-mix(in srgb, ${color} 16%, transparent)" stroke-width="8"/>`
-      : `<circle cx="60" cy="60" r="50" fill="none" stroke="${offline ? "var(--warning-color, #ffa600)" : "var(--secondary-text-color)"}"
+      : `<circle cx="60" cy="60" r="50" fill="none" stroke="${offline ? "var(--warning-color, #ffa600)" : "var(--dim)"}"
         stroke-opacity="${offline ? 0.45 : 0.35}" stroke-width="8" stroke-dasharray="2 6"/>`;
     // a zero-length round-capped arc would still draw a dot, so the arc is skipped at 0 W
     const arc = producing
@@ -543,19 +572,23 @@ class KostalPikoCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `<style>
       :host { display: block; }
-      ha-card { padding: 16px; --accent: ${color}; --warn: var(--warning-color, #ffa600); --ok: var(--success-color, #43a047); }
+      ha-card { padding: 16px; --accent: ${color}; --warn: var(--warning-color, #ffa600); --ok: var(--success-color, #43a047);
+        /* greys derived from the main text, so the hierarchy holds in any theme */
+        --dim: color-mix(in srgb, var(--primary-text-color) 58%, transparent);
+        --ok-text: color-mix(in srgb, var(--ok) 60%, var(--primary-text-color));
+        --warn-text: color-mix(in srgb, var(--warn) 60%, var(--primary-text-color)); }
       .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
       .title { font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--primary-text-color); }
       .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 3px 10px 3px 8px; border-radius: 999px; white-space: nowrap;
-        background: color-mix(in srgb, var(--secondary-text-color) 12%, transparent); color: var(--secondary-text-color); }
+        background: color-mix(in srgb, var(--dim) 12%, transparent); color: var(--dim); }
       .chip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-      .chip.on { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
-      .chip.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+      .chip.on { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok-text); }
+      .chip.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn-text); }
       .alert { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; margin-bottom: 14px;
         background: color-mix(in srgb, var(--warn) 10%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
       .alert svg { flex: 0 0 auto; color: var(--warn); margin-top: 1px; }
       .alert b { display: block; font-size: 14px; font-weight: 600; color: var(--primary-text-color); }
-      .alert span { font-size: 12px; color: var(--secondary-text-color); }
+      .alert span { font-size: 12px; color: var(--dim); }
       .top { display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 16px;
         background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
           color-mix(in srgb, var(--primary-text-color) 2%, transparent); }
@@ -565,14 +598,14 @@ class KostalPikoCard extends HTMLElement {
       .main-box { flex: 0 0 auto; min-width: 110px; }
       .ring { width: 116px; height: 116px; display: block; }
       .ring-value { font-size: 28px; font-weight: 600; letter-spacing: -.02em; fill: var(--primary-text-color); font-variant-numeric: tabular-nums; }
-      .ring-value.muted { fill: var(--secondary-text-color); }
-      .ring-unit { font-size: 12px; fill: var(--secondary-text-color); }
+      .ring-value.muted { fill: var(--dim); }
+      .ring-unit { font-size: 12px; fill: var(--dim); }
       .big { font-size: 30px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--primary-text-color); }
-      .small { font-size: 12px; color: var(--secondary-text-color); }
-      .label, .detail { font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--secondary-text-color); }
-      .detail.sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; margin: 2px 0 0 80px; }
+      .small { font-size: 12px; color: var(--dim); }
+      .label, .detail { font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
+      .detail.sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11px; margin: 1px 0 0 80px; }
       .value { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; margin-top: 2px; color: var(--primary-text-color); }
-      .u { font-size: .62em; font-weight: 500; color: var(--secondary-text-color); margin-left: .2em; letter-spacing: 0; }
+      .u { font-size: .62em; font-weight: 500; color: var(--dim); margin-left: .2em; letter-spacing: 0; }
       .kpis { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
       .kpis .hero, .kpis .wide { grid-column: 1 / -1; }
       .kpis .hero .value { font-size: 30px; line-height: 1.1; letter-spacing: -.02em; }
@@ -581,8 +614,8 @@ class KostalPikoCard extends HTMLElement {
       .section > .label { margin-bottom: 8px; }
       .chart { position: relative; touch-action: pan-y; cursor: crosshair; }
       .spark { width: 100%; height: 96px; display: block; overflow: visible; }
-      .grid-line { stroke: var(--secondary-text-color); stroke-opacity: .25; stroke-dasharray: 2 4; }
-      .base-line { stroke: var(--secondary-text-color); stroke-opacity: .3; }
+      .grid-line { stroke: var(--dim); stroke-opacity: .25; stroke-dasharray: 2 4; }
+      .base-line { stroke: var(--dim); stroke-opacity: .3; }
       .gap-band { fill: color-mix(in srgb, var(--warn) 12%, transparent); }
       .peak { position: absolute; pointer-events: none; transition: opacity .15s; }
       .peak i { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
@@ -591,19 +624,19 @@ class KostalPikoCard extends HTMLElement {
         border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
       .peak.flip span { left: auto; right: 9px; }
       .chart.hover .peak { opacity: 0; }
-      .cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--secondary-text-color); opacity: 0.5; pointer-events: none; }
+      .cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--dim); opacity: 0.5; pointer-events: none; }
       .dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px var(--card-background-color, #fff); }
       .tip { position: absolute; top: -4px; display: flex; flex-direction: column; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; pointer-events: none;
         background: var(--card-background-color, #fff); color: var(--primary-text-color); border: 1px solid var(--divider-color); }
-      .tip span { font-size: 11px; color: var(--secondary-text-color); }
-      .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--secondary-text-color); margin-top: 6px; font-variant-numeric: tabular-nums; }
-      .axis .gap { color: var(--warn); }
-      .rows { display: grid; gap: 10px; }
+      .tip span { font-size: 11px; color: var(--dim); }
+      .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin-top: 6px; font-variant-numeric: tabular-nums; }
+      .axis .gap { color: var(--warn-text); }
+      .rows { display: grid; gap: 8px; }
       .row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--primary-text-color); }
       .name { width: 70px; flex: 0 0 auto; display: flex; align-items: center; gap: 6px; font-weight: 500; }
       .name b { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
       .amount { min-width: 86px; text-align: right; flex: 0 0 auto; font-weight: 500; font-variant-numeric: tabular-nums; }
-      .amount small { color: var(--secondary-text-color); font-weight: 400; font-size: 12px; }
+      .amount small { color: var(--dim); font-weight: 400; font-size: 12px; }
       .bar { flex: 1; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--primary-text-color) 8%, transparent); overflow: hidden; }
       .bar.thick { height: 10px; margin: 8px 0 4px; }
       .bar i { display: block; height: 100%; border-radius: 4px; }
@@ -619,7 +652,7 @@ class KostalPikoCard extends HTMLElement {
         background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
       .ico svg { width: 16px; height: 16px; }
       .cursor[hidden], .dot[hidden], .tip[hidden] { display: none; }
-      .empty { padding: 8px 0; color: var(--secondary-text-color); }
+      .empty { padding: 8px 0; color: var(--dim); }
     </style>
     <ha-card>
       <div class="head"><span class="title">${esc(this._config.name)}</span>

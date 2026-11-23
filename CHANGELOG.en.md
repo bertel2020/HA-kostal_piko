@@ -2,6 +2,12 @@
 
 *[🇩🇪 Deutsche Version](CHANGELOG.md)*
 
+## Unreleased
+
+**Fixed**
+- **Card:** Labels, units and secondary text derive their grey from the main text, so the contrast to the values holds in themes whose secondary color is almost as dark as the text. The status chip is easier to read with light status colors, and the voltage and current lines of the strings are smaller and calmer.
+- **Card:** It now finds the sensors through the device of the "Current power" sensor instead of relying on the prefix alone. If the sensors have other entity IDs (e.g. `sensor.technik_kostal_piko_efficiency` with an area name in front), efficiency, average, utilization, specific yield and the string powers show up again.
+
 ## 2.8.0 – 2026-11-22
 
 **New**

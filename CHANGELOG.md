@@ -2,6 +2,12 @@
 
 *[🇬🇧 English version](CHANGELOG.en.md)*
 
+## Unveröffentlicht
+
+**Behoben**
+- **Karte:** Beschriftungen, Einheiten und Nebentexte leiten ihr Grau aus der Hauptschrift ab. So bleibt der Unterschied zu den Werten auch in Themes erhalten, deren Sekundärfarbe fast so dunkel ist wie der Text. Der Status-Chip ist bei hellen Statusfarben besser lesbar, die Spannungs- und Stromzeilen bei den Strings sind kleiner und dezenter.
+- **Karte:** Sie findet die Sensoren jetzt über das Gerät des Sensors „Aktuelle Leistung“ und nicht mehr nur über das Präfix. Haben die Sensoren andere Entity-IDs (z. B. `sensor.technik_kostal_piko_efficiency` mit Bereichsname davor), erscheinen Wirkungsgrad, Durchschnitt, Auslastung, spezifischer Ertrag und die String-Leistungen wieder.
+
 ## 2.8.0 – 2026-11-22
 
 **Neu**
