@@ -2,7 +2,7 @@
 
 *[🇬🇧 English version](CHANGELOG.en.md)*
 
-## Unveröffentlicht
+## 2.8.1 – 2026-11-23
 
 **Behoben**
 - **Karte:** Beschriftungen, Einheiten und Nebentexte leiten ihr Grau aus der Hauptschrift ab. So bleibt der Unterschied zu den Werten auch in Themes erhalten, deren Sekundärfarbe fast so dunkel ist wie der Text. Der Status-Chip ist bei hellen Statusfarben besser lesbar, die Spannungs- und Stromzeilen bei den Strings sind kleiner und dezenter.

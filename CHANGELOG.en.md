@@ -2,7 +2,7 @@
 
 *[🇩🇪 Deutsche Version](CHANGELOG.md)*
 
-## Unreleased
+## 2.8.1 – 2026-11-23
 
 **Fixed**
 - **Card:** Labels, units and secondary text derive their grey from the main text, so the contrast to the values holds in themes whose secondary color is almost as dark as the text. The status chip is easier to read with light status colors, and the voltage and current lines of the strings are smaller and calmer.
